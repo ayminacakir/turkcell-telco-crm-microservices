@@ -1,4 +1,4 @@
-package com.turkcell.customer_service.domain;
+package com.turkcell.customer_service.domain.entity;
 
 import jakarta.persistence.*;
 
