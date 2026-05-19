@@ -1,0 +1,17 @@
+server:
+    port: 9002
+
+spring:
+    application:
+        name: billing-service
+
+    datasource:
+        url: jdbc:postgresql://localhost:5432/telco_crm_microservices?currentSchema=billing_service
+        username: admin
+        password: admin
+        driver-class-name: org.postgresql.Driver
+
+    jpa:
+        hibernate:
+            ddl-auto: update
+        show-sql: true
