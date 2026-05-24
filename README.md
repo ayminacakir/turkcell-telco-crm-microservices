@@ -84,14 +84,14 @@ turkcell-telco-crm-microservices/
 | # | Servis | Port | Veritabanı | Sorumlu | Açıklama |
 |---|---|---|---|---|---|
 | 1 | customer-service | 9002 | customer_db | Aymina | Müşteri kaydı, adres, KYC belgesi |
-| 2 | product-catalog-service | 9003 | product_catalog_db | Sen | Tarife, ek paket kataloğu |
+| 2 | product-catalog-service | 9003 | product_catalog_db | Nasrulla | Tarife, ek paket kataloğu |
 | 3 | order-service | 9004 | order_db | Aymina | Sipariş yönetimi, Saga pattern |
 | 4 | subscription-service | 9005 | subscription_db | Aymina | Abonelik, MSISDN havuzu, SIM kart |
 | 5 | usage-service | 9006 | usage_db | Mervenur | Kota takibi, CDR kullanım kayıtları |
 | 6 | billing-service | 9007 | billing_db | Mervenur | Fatura üretimi, fatura döngüsü |
 | 7 | payment-service | 9008 | payment_db | Mervenur | Ödeme, ödeme girişimleri |
-| 8 | notification-service | 9009 | notification_db | Sen | SMS, e-posta, push bildirimleri |
-| 9 | ticket-service | 9010 | ticket_db | Sen | Müşteri talep ve şikayetleri |
+| 8 | notification-service | 9009 | notification_db | Nasrulla | SMS, e-posta, push bildirimleri |
+| 9 | ticket-service | 9010 | ticket_db | Nasrulla | Müşteri talep ve şikayetleri |
 
 ---
 
