@@ -264,6 +264,16 @@ mvn spring-boot:run
 
 ## 📊 ER Diyagramları
 
+### Genel ER Diyagramı (Unified)
+
+Tüm servislerin tek bir yapı olarak modellendiği genel ER diyagramı — ilk tasarım aşamasında oluşturulmuştur.
+
+![Genel ER Diagram](Genel%20ER%20Diagram.png)
+
+---
+
+### Servis Bazlı ER Diyagramları
+
 Her mikroservisin ER diyagramı ilgili servis klasöründe PNG olarak bulunmaktadır.
 Diyagramlar [dbdiagram.io](https://dbdiagram.io) üzerinde **database per service** prensibiyle ayrı ayrı oluşturulmuştur.
 
