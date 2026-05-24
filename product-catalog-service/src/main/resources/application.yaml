@@ -1,1 +1,20 @@
-spring.application.name=product-catalog-service
+server:
+  port: 9003
+
+spring:
+  application:
+    name: product-catalog-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/product_catalog_db
+    username: admin
+    password: admin
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        default_schema: product_catalog_service
