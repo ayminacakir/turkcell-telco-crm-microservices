@@ -330,7 +330,7 @@ Diyagramlar [dbdiagram.io](https://dbdiagram.io) üzerinde **database per servic
 
 | İsim | Sorumlu Servisler |
 |---|---|
-| Sen | product-catalog-service · notification-service · ticket-service |
+| Nasrulla | product-catalog-service · notification-service · ticket-service |
 | Aymina | customer-service · order-service · subscription-service |
 | Mervenur | billing-service · payment-service · usage-service |
 
