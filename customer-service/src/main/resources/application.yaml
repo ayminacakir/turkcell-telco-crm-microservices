@@ -6,7 +6,7 @@ spring:
         name: customer-service
 
     datasource:
-        url: jdbc:postgresql://localhost:5433/telco_crm_microservices?currentSchema=customer_service
+        url: jdbc:postgresql://localhost:5433/customer_db
         username: admin
         password: admin
         driver-class-name: org.postgresql.Driver
