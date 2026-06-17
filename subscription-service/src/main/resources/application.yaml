@@ -1,17 +1,15 @@
 server:
-    port: 9005
+  port: 9005
 
 spring:
-    application:
-        name: subscription-service
-
-    datasource:
-        url: jdbc:postgresql://localhost:5433/telco_crm_microservices?currentSchema=subscription_service
-        username: admin
-        password: admin
-        driver-class-name: org.postgresql.Driver
-
-    jpa:
-        hibernate:
-            ddl-auto: update
-        show-sql: true
+  application:
+    name: subscription-service
+  datasource:
+    url: jdbc:postgresql://localhost:5435/subscription_db
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true

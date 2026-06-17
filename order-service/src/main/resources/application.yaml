@@ -1,17 +1,15 @@
 server:
-    port: 9004
+  port: 9004
 
 spring:
-    application:
-        name: order-service
-
-    datasource:
-        url: jdbc:postgresql://localhost:5433/telco_crm_microservices?currentSchema=order_service
-        username: admin
-        password: admin
-        driver-class-name: org.postgresql.Driver
-
-    jpa:
-        hibernate:
-            ddl-auto: update
-        show-sql: true
+  application:
+    name: order-service
+  datasource:
+    url: jdbc:postgresql://localhost:5434/order_db
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
