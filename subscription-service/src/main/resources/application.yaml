@@ -6,7 +6,7 @@ spring:
         name: subscription-service
 
     datasource:
-        url: jdbc:postgresql://localhost:5433/subscription_db
+        url: jdbc:postgresql://localhost:5435/subscription_db
         username: postgres
         password: postgres
         driver-class-name: org.postgresql.Driver
