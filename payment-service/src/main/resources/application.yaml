@@ -1,17 +1,15 @@
 server:
-    port: 9002
+  port: 9008
 
 spring:
-    application:
-        name: payment-service
-
-    datasource:
-        url: jdbc:postgresql://localhost:5432/telco_crm_microservices?currentSchema=payment_service
-        username: admin
-        password: admin
-        driver-class-name: org.postgresql.Driver
-
-    jpa:
-        hibernate:
-            ddl-auto: update
-        show-sql: true
+  application:
+    name: payment-service
+  datasource:
+    url: jdbc:postgresql://localhost:5438/payment_db
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
