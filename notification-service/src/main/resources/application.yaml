@@ -1,12 +1,12 @@
 server:
-  port: 9003
+  port: 9008
 
 spring:
   application:
-    name: product-catalog-service
+    name: notification-service
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/product_catalog_db
+    url: jdbc:postgresql://localhost:5432/notification_db
     username: admin
     password: admin
     driver-class-name: org.postgresql.Driver
@@ -17,4 +17,4 @@ spring:
     show-sql: true
     properties:
       hibernate:
-        default_schema: product_catalog_service
+        default_schema: notification_service
