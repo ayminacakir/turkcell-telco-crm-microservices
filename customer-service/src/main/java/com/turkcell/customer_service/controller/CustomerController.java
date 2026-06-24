@@ -3,7 +3,6 @@ package com.turkcell.customer_service.controller;
 import java.util.List;
 import java.util.UUID;
 
-import org.springframework.data.convert.ReadingConverter;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,14 +13,16 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.turkcell.customer_service.dto.request.CreateAddressRequest;
+import com.turkcell.customer_service.dto.request.CreateContactInfoRequest;
 import com.turkcell.customer_service.dto.request.CreateCustomerRequest;
 import com.turkcell.customer_service.dto.request.CreateDocumentRequest;
 import com.turkcell.customer_service.dto.request.UpdateCustomerRequest;
 import com.turkcell.customer_service.dto.response.CustomerResponse;
-import com.turkcell.customer_service.entity.Address;
-import com.turkcell.customer_service.entity.Document;
-import com.turkcell.customer_service.service.CustomerService;
 
+import com.turkcell.customer_service.service.CustomerService;
+import com.turkcell.customer_service.dto.response.AddressResponse;
+import com.turkcell.customer_service.dto.response.ContactInfoResponse;
+import com.turkcell.customer_service.dto.response.DocumentResponse;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.http.HttpStatus;
@@ -72,28 +73,40 @@ public class CustomerController {
 
     @PostMapping("/{id}/addresses")
     @ResponseStatus(HttpStatus.CREATED)
-    public Address addAddress(
+    public AddressResponse addAddress(
             @PathVariable UUID id,
             @Valid @RequestBody CreateAddressRequest request) {
         return customerService.addAddress(id, request);
     }
 
     @GetMapping("/{id}/addresses")
-    public List<Address> getAddresses(@PathVariable UUID id) {
+    public List<AddressResponse> getAddresses(@PathVariable UUID id) {
         return customerService.getAddresses(id);
     }
 
     @PostMapping("/{id}/documents")
     @ResponseStatus(HttpStatus.CREATED)
-    public Document addDocument(
+    public DocumentResponse addDocument(
             @PathVariable UUID id,
             @Valid @RequestBody CreateDocumentRequest request) {
         return customerService.addDocument(id, request);
     }
 
     @GetMapping("/{id}/documents")
-    public List<Document> getDocuments(@PathVariable UUID id) {
+    public List<DocumentResponse> getDocuments(@PathVariable UUID id) {
         return customerService.getDocuments(id);
     }
 
+    @PostMapping("/{id}/contacts")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ContactInfoResponse addContactInfo(
+            @PathVariable UUID id,
+            @Valid @RequestBody CreateContactInfoRequest request) {
+        return customerService.addContactInfo(id, request);
+    }
+
+    @GetMapping("/{id}/contacts")
+    public List<ContactInfoResponse> getContactInfos(@PathVariable UUID id) {
+        return customerService.getContactInfos(id);
+    }
 }

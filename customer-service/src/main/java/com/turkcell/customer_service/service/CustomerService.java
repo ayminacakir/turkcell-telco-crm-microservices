@@ -1,16 +1,24 @@
 package com.turkcell.customer_service.service;
 
 import com.turkcell.customer_service.dto.request.CreateAddressRequest;
+import com.turkcell.customer_service.dto.request.CreateContactInfoRequest;
 import com.turkcell.customer_service.dto.request.CreateCustomerRequest;
 import com.turkcell.customer_service.dto.request.CreateDocumentRequest;
 import com.turkcell.customer_service.dto.request.UpdateCustomerRequest;
+import com.turkcell.customer_service.dto.response.AddressResponse;
+import com.turkcell.customer_service.dto.response.ContactInfoResponse;
 import com.turkcell.customer_service.dto.response.CustomerResponse;
+import com.turkcell.customer_service.dto.response.DocumentResponse;
 import com.turkcell.customer_service.entity.Address;
+import com.turkcell.customer_service.entity.ContactInfo;
 import com.turkcell.customer_service.entity.Customer;
 import com.turkcell.customer_service.entity.Document;
+import com.turkcell.customer_service.enums.ContactType;
 import com.turkcell.customer_service.enums.CustomerStatus;
 import com.turkcell.customer_service.enums.CustomerType;
+import com.turkcell.customer_service.excepiton.CustomerNotFoundException;
 import com.turkcell.customer_service.repository.AddressRepository;
+import com.turkcell.customer_service.repository.ContactInfoRepository;
 import com.turkcell.customer_service.repository.CustomerRepository;
 import com.turkcell.customer_service.repository.DocumentRepository;
 import java.time.LocalDateTime;
@@ -25,14 +33,17 @@ public class CustomerService {
     private final CustomerRepository customerRepository;
     private final AddressRepository addressRepository;
     private final DocumentRepository documentRepository;
+    private final ContactInfoRepository contactInfoRepository;
 
     public CustomerService(
             CustomerRepository customerRepository,
             AddressRepository addressRepository,
-            DocumentRepository documentRepository) {
+            DocumentRepository documentRepository,
+            ContactInfoRepository contactInfoRepository) {
         this.customerRepository = customerRepository;
         this.addressRepository = addressRepository;
         this.documentRepository = documentRepository;
+        this.contactInfoRepository = contactInfoRepository;
     }
 
     @Transactional
@@ -103,7 +114,7 @@ public class CustomerService {
     }
 
     @Transactional
-    public Address addAddress(UUID customerId, CreateAddressRequest request) {
+    public AddressResponse addAddress(UUID customerId, CreateAddressRequest request) {
         findCustomerById(customerId);
 
         Address address = new Address();
@@ -114,16 +125,22 @@ public class CustomerService {
         address.setPostalCode(request.postalCode());
         address.setDefaultAddress(request.defaultAddress());
 
-        return addressRepository.save(address);
+        Address savedAddress = addressRepository.save(address);
+
+        return toAddressResponse(savedAddress);
     }
 
-    public List<Address> getAddresses(UUID customerId) {
+    public List<AddressResponse> getAddresses(UUID customerId) {
         findCustomerById(customerId);
-        return addressRepository.findByCustomerId(customerId);
+
+        return addressRepository.findByCustomerId(customerId)
+                .stream()
+                .map(this::toAddressResponse)
+                .toList();
     }
 
     @Transactional
-    public Document addDocument(UUID customerId, CreateDocumentRequest request) {
+    public DocumentResponse addDocument(UUID customerId, CreateDocumentRequest request) {
         findCustomerById(customerId);
 
         Document document = new Document();
@@ -131,17 +148,23 @@ public class CustomerService {
         document.setType(request.type());
         document.setFileRef(request.fileRef());
 
-        return documentRepository.save(document);
+        Document savedDocument = documentRepository.save(document);
+
+        return toDocumentResponse(savedDocument);
     }
 
-    public List<Document> getDocuments(UUID customerId) {
+    public List<DocumentResponse> getDocuments(UUID customerId) {
         findCustomerById(customerId);
-        return documentRepository.findByCustomerId(customerId);
+
+        return documentRepository.findByCustomerId(customerId)
+                .stream()
+                .map(this::toDocumentResponse)
+                .toList();
     }
 
     private Customer findCustomerById(UUID id) {
         return customerRepository.findByIdAndDeletedFalse(id)
-                .orElseThrow(() -> new IllegalArgumentException("Customer not found."));
+                .orElseThrow(() -> new CustomerNotFoundException("Customer with id " + id + " not found."));
     }
 
     private void validateCustomerRequest(CreateCustomerRequest request) {
@@ -190,5 +213,75 @@ public class CustomerService {
                 customer.getDateOfBirth(),
                 customer.getStatus(),
                 customer.getCreatedAt());
+    }
+
+    private AddressResponse toAddressResponse(Address address) {
+        return new AddressResponse(
+                address.getId(),
+                address.getCustomerId(),
+                address.getLine1(),
+                address.getCity(),
+                address.getDistrict(),
+                address.getPostalCode(),
+                address.isDefaultAddress());
+    }
+
+    private DocumentResponse toDocumentResponse(Document document) {
+        return new DocumentResponse(
+                document.getId(),
+                document.getCustomerId(),
+                document.getType(),
+                document.getFileRef(),
+                document.getVerifiedAt());
+    }
+
+    @Transactional
+    public ContactInfoResponse addContactInfo(
+            UUID customerId,
+            CreateContactInfoRequest request) {
+        findCustomerById(customerId);
+        validateContactInfo(request);
+
+        ContactInfo contactInfo = new ContactInfo();
+        contactInfo.setCustomerId(customerId);
+        contactInfo.setType(request.type());
+        contactInfo.setValue(request.value());
+        contactInfo.setPrimaryContact(request.primaryContact());
+
+        ContactInfo savedContactInfo = contactInfoRepository.save(contactInfo);
+
+        return toContactInfoResponse(savedContactInfo);
+    }
+
+    public List<ContactInfoResponse> getContactInfos(UUID customerId) {
+        findCustomerById(customerId);
+
+        return contactInfoRepository.findByCustomerId(customerId)
+                .stream()
+                .map(this::toContactInfoResponse)
+                .toList();
+    }
+
+    private void validateContactInfo(CreateContactInfoRequest request) {
+        if (request.type() == ContactType.EMAIL) {
+            if (!request.value().matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")) {
+                throw new IllegalArgumentException("Invalid email address.");
+            }
+        }
+
+        if (request.type() == ContactType.PHONE) {
+            if (!request.value().matches("\\d{10,15}")) {
+                throw new IllegalArgumentException("Invalid phone number.");
+            }
+        }
+    }
+
+    private ContactInfoResponse toContactInfoResponse(ContactInfo contactInfo) {
+        return new ContactInfoResponse(
+                contactInfo.getId(),
+                contactInfo.getCustomerId(),
+                contactInfo.getType(),
+                contactInfo.getValue(),
+                contactInfo.isPrimaryContact());
     }
 }
