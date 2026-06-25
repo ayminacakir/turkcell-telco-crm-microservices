@@ -35,6 +35,7 @@
         <module>ticket-service</module>
         <module>gateway_server</module>
         <module>eureka_server</module>
+        <module>config-server</module>
     </modules>
 
     <dependencyManagement>

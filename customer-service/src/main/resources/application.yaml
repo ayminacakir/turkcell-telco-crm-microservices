@@ -4,14 +4,7 @@ server:
 spring:
     application:
         name: customer-service
-
-    datasource:
-        url: jdbc:postgresql://localhost:5432/customer_db
-        username: postgres
-        password: postgres
-        driver-class-name: org.postgresql.Driver
-
-    jpa:
-        hibernate:
-            ddl-auto: update
-        show-sql: true
+    profiles:
+        active: dev
+    config:
+        import: optional:configserver:http://localhost:8888
