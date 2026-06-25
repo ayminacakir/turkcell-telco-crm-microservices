@@ -1,5 +1,8 @@
 package com.turkcell.order_service.service;
 
+import com.turkcell.order_service.client.CustomerClient;
+import com.turkcell.order_service.client.dto.CustomerResponse;
+import com.turkcell.order_service.client.dto.CustomerStatus;
 import com.turkcell.order_service.dto.request.CreateOrderItemRequest;
 import com.turkcell.order_service.dto.request.CreateOrderRequest;
 import com.turkcell.order_service.dto.response.OrderItemResponse;
@@ -9,10 +12,13 @@ import com.turkcell.order_service.entity.OrderItem;
 import com.turkcell.order_service.entity.SagaState;
 import com.turkcell.order_service.enums.OrderStatus;
 import com.turkcell.order_service.enums.SagaStatus;
+import com.turkcell.order_service.exception.CustomerNotActiveException;
+import com.turkcell.order_service.exception.CustomerNotFoundException;
 import com.turkcell.order_service.exception.OrderNotFoundException;
 import com.turkcell.order_service.repository.OrderItemRepository;
 import com.turkcell.order_service.repository.OrderRepository;
 import com.turkcell.order_service.repository.SagaStateRepository;
+import feign.FeignException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -26,19 +32,23 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final SagaStateRepository sagaStateRepository;
+    private final CustomerClient customerClient;
 
     public OrderService(
             OrderRepository orderRepository,
             OrderItemRepository orderItemRepository,
-            SagaStateRepository sagaStateRepository) {
+            SagaStateRepository sagaStateRepository,
+            CustomerClient customerClient) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.sagaStateRepository = sagaStateRepository;
+        this.customerClient = customerClient;
     }
 
     @Transactional
     public OrderResponse create(CreateOrderRequest request) {
         validateCreateOrderRequest(request);
+        validateCustomer(request.customerId());
 
         BigDecimal totalAmount = calculateTotalAmount(request.items());
 
@@ -118,6 +128,21 @@ public class OrderService {
             if (item.unitPrice() == null || item.unitPrice().compareTo(BigDecimal.ZERO) <= 0) {
                 throw new IllegalArgumentException("Item unit price must be greater than zero.");
             }
+        }
+    }
+
+    private void validateCustomer(UUID customerId) {
+        CustomerResponse customer;
+
+        try {
+            customer = customerClient.getById(customerId);
+        } catch (FeignException.NotFound exception) {
+            throw new CustomerNotFoundException("Customer with id " + customerId + " not found.");
+        }
+
+        if (customer.status() != CustomerStatus.ACTIVE) {
+            throw new CustomerNotActiveException(
+                    "Customer with id " + customerId + " is not active. Current status: " + customer.status());
         }
     }
 
