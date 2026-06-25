@@ -1,7 +1,6 @@
-package com.turkcell.subscription_service.domain.entity;
+package com.turkcell.subscription_service.entity;
 
-import com.turkcell.subscription_service.domain.enums.SimCardStatus;
-
+import com.turkcell.subscription_service.enums.SimCardStatus;
 import jakarta.persistence.*;
 
 @Entity
@@ -10,19 +9,24 @@ public class SimCard {
 
     @Id
     @Column(nullable = false, unique = true)
-    private String iccid;// ICCID SIM kartın seri numarasıdır.
+    private String iccid;
 
     @Column(nullable = false, unique = true)
-    private String imsi;// IMSI SIM kartın uluslararası mobil abone kimliği numarasıdır.
+    private String imsi;
 
-    @OneToOne
-    @JoinColumn(name = "msisdn", referencedColumnName = "msisdn")
-    private MsisdnPool msisdnPool;// MSISDN SIM kartın telefon numarasıdır. Her SIM kartın benzersiz bir MSISDN'si
-    // vardır.
+    @Column(nullable = false)
+    private String msisdn;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private SimCardStatus status;
+
+    @PrePersist
+    public void prePersist() {
+        if (this.status == null) {
+            this.status = SimCardStatus.FREE;
+        }
+    }
 
     public String getIccid() {
         return iccid;
@@ -40,12 +44,12 @@ public class SimCard {
         this.imsi = imsi;
     }
 
-    public MsisdnPool getMsisdnPool() {
-        return msisdnPool;
+    public String getMsisdn() {
+        return msisdn;
     }
 
-    public void setMsisdnPool(MsisdnPool msisdnPool) {
-        this.msisdnPool = msisdnPool;
+    public void setMsisdn(String msisdn) {
+        this.msisdn = msisdn;
     }
 
     public SimCardStatus getStatus() {
@@ -55,5 +59,4 @@ public class SimCard {
     public void setStatus(SimCardStatus status) {
         this.status = status;
     }
-
 }

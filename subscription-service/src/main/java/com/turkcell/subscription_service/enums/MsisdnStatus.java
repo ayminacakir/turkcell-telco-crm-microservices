@@ -1,4 +1,4 @@
-package com.turkcell.subscription_service.domain.enums;
+package com.turkcell.subscription_service.enums;
 
 public enum MsisdnStatus {
     FREE,

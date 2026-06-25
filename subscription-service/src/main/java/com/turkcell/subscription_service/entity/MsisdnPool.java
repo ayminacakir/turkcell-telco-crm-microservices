@@ -1,10 +1,8 @@
-package com.turkcell.subscription_service.domain.entity;
+package com.turkcell.subscription_service.entity;
 
+import com.turkcell.subscription_service.enums.MsisdnStatus;
 import jakarta.persistence.*;
-
 import java.time.LocalDateTime;
-
-import com.turkcell.subscription_service.domain.enums.MsisdnStatus;
 
 @Entity
 @Table(name = "msisdn_pool")
@@ -12,13 +10,20 @@ public class MsisdnPool {
 
     @Id
     @Column(nullable = false, unique = true)
-    private String msisdn;// msisdn telefon numarası benzersiz olmalı
+    private String msisdn;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private MsisdnStatus status;
 
     private LocalDateTime reservedUntil;
+
+    @PrePersist
+    public void prePersist() {
+        if (this.status == null) {
+            this.status = MsisdnStatus.FREE;
+        }
+    }
 
     public String getMsisdn() {
         return msisdn;
@@ -43,5 +48,4 @@ public class MsisdnPool {
     public void setReservedUntil(LocalDateTime reservedUntil) {
         this.reservedUntil = reservedUntil;
     }
-
 }
