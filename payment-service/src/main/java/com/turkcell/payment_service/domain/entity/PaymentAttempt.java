@@ -23,9 +23,8 @@ public class PaymentAttempt {
     @Column(name = "attempt_no", nullable = false)
     private Integer attemptNo;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "response", columnDefinition = "jsonb")
-    private Map<String, Object> response;
+   @Column(name = "response", columnDefinition = "text")
+   private String response;
 
     @Column(name = "attempted_at", nullable = false)
     private LocalDateTime attemptedAt;
@@ -41,8 +40,8 @@ public class PaymentAttempt {
     public Integer getAttemptNo() { return attemptNo; }
     public void setAttemptNo(Integer attemptNo) { this.attemptNo = attemptNo; }
 
-    public Map<String, Object> getResponse() { return response; }
-    public void setResponse(Map<String, Object> response) { this.response = response; }
+    public String getResponse() { return response; }
+    public void setResponse(String response) { this.response = response; }
 
     public LocalDateTime getAttemptedAt() { return attemptedAt; }
     public void setAttemptedAt(LocalDateTime attemptedAt) { this.attemptedAt = attemptedAt; }
