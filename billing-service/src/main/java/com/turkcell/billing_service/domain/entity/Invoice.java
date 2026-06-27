@@ -84,6 +84,15 @@ public class Invoice {
 
     public LocalDateTime getIssuedAt() { return issuedAt; }
     public void setIssuedAt(LocalDateTime issuedAt) { this.issuedAt = issuedAt; }
+    @PrePersist
+    protected void onCreate() {
+    if (this.issuedAt == null) {
+        this.issuedAt = java.time.LocalDateTime.now();
+    }
+    if (this.status == null) {
+        this.status = "DRAFT";
+    }
+}
 
     public List<InvoiceLine> getLines() { return lines; }
     public void setLines(List<InvoiceLine> lines) { this.lines = lines; }
