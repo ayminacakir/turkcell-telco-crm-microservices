@@ -31,6 +31,16 @@
             "projectName": "payment-service",
             "args": "",
             "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-UsageServiceApplication<usage-service>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.turkcell.usage_service.UsageServiceApplication",
+            "projectName": "usage-service",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
         }
     ]
 }
