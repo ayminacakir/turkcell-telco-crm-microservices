@@ -49,6 +49,9 @@ public class OutboxPublisherService {
         if ("OrderCreated".equals(eventType)) {
             return "order.created";
         }
+        if ("OrderCancelled".equals(eventType)) {
+            return "order.cancelled";
+        }
         return null;
     }
 }

@@ -17,8 +17,13 @@ import com.turkcell.order_service.enums.SagaStatus;
 import com.turkcell.order_service.exception.CustomerNotActiveException;
 import com.turkcell.order_service.exception.CustomerNotFoundException;
 import com.turkcell.order_service.exception.OrderNotFoundException;
+import com.turkcell.order_service.kafka.entity.ProcessedEvent;
+import com.turkcell.order_service.kafka.event.PaymentCompletedEvent;
+import com.turkcell.order_service.kafka.event.PaymentFailedEvent;
+import com.turkcell.order_service.kafka.repository.ProcessedEventRepository;
 import com.turkcell.order_service.outbox.entity.OutboxEvent;
 import com.turkcell.order_service.outbox.enums.OutboxStatus;
+import com.turkcell.order_service.outbox.event.OrderCancelledEvent;
 import com.turkcell.order_service.outbox.event.OrderCreatedEvent;
 import com.turkcell.order_service.outbox.event.OrderCreatedItemEvent;
 import com.turkcell.order_service.outbox.repository.OutboxEventRepository;
@@ -26,14 +31,18 @@ import com.turkcell.order_service.repository.OrderItemRepository;
 import com.turkcell.order_service.repository.OrderRepository;
 import com.turkcell.order_service.repository.SagaStateRepository;
 import feign.FeignException;
+import lombok.extern.slf4j.Slf4j;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Slf4j
 public class OrderService {
 
     private final OrderRepository orderRepository;
@@ -42,6 +51,7 @@ public class OrderService {
     private final CustomerClient customerClient;
     private final OutboxEventRepository outboxEventRepository;
     private final ObjectMapper objectMapper;
+    private final ProcessedEventRepository processedEventRepository;
 
     public OrderService(
             OrderRepository orderRepository,
@@ -49,13 +59,15 @@ public class OrderService {
             SagaStateRepository sagaStateRepository,
             CustomerClient customerClient,
             OutboxEventRepository outboxEventRepository,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            ProcessedEventRepository processedEventRepository) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.sagaStateRepository = sagaStateRepository;
         this.customerClient = customerClient;
         this.outboxEventRepository = outboxEventRepository;
         this.objectMapper = objectMapper;
+        this.processedEventRepository = processedEventRepository;
     }
 
     @Transactional
@@ -102,21 +114,7 @@ public class OrderService {
                         .toList(),
                 LocalDateTime.now());
 
-        String payload;
-        try {
-            payload = objectMapper.writeValueAsString(orderCreatedEvent);
-        } catch (JsonProcessingException e) {
-            throw new IllegalStateException("Could not serialize OrderCreated event", e);
-        }
-
-        OutboxEvent outboxEvent = new OutboxEvent();
-        outboxEvent.setAggregateId(savedOrder.getId());
-        outboxEvent.setAggregateType("ORDER");
-        outboxEvent.setEventType("OrderCreated");
-        outboxEvent.setPayload(payload);
-        outboxEvent.setStatus(OutboxStatus.PENDING);
-
-        outboxEventRepository.save(outboxEvent);
+        saveOutboxEvent(savedOrder.getId(), "OrderCreated", orderCreatedEvent);
 
         return toOrderResponse(savedOrder, savedOrderItems);
     }
@@ -159,6 +157,112 @@ public class OrderService {
         List<OrderItem> items = orderItemRepository.findByOrderId(order.getId());
 
         return toOrderResponse(savedOrder, items);
+    }
+
+    @Transactional
+    public void handlePaymentCompleted(PaymentCompletedEvent event) {
+        if (processedEventRepository.existsById(event.eventId())) {
+            log.info("Event {} already processed, skipping.", event.eventId());
+            return;
+        }
+
+        Order order = orderRepository.findById(event.orderId()).orElse(null);
+        if (order == null) {
+            log.error("Order not found for id: {}, skipping PaymentCompleted event.", event.orderId());
+            return;
+        }
+
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            log.warn("Order {} is already CANCELLED, skipping PaymentCompleted.", event.orderId());
+            saveProcessedEvent(event.eventId(), event.eventType());
+            return;
+        }
+
+        order.setStatus(OrderStatus.PAID);
+        orderRepository.save(order);
+
+        sagaStateRepository.findByOrderId(order.getId()).ifPresent(saga -> {
+            saga.setStatus(SagaStatus.PAYMENT_COMPLETED);
+            sagaStateRepository.save(saga);
+        });
+
+        saveProcessedEvent(event.eventId(), event.eventType());
+
+        log.info("Order {} marked as PAID for payment {}.", order.getId(), event.paymentId());
+    }
+
+    @Transactional
+    public void handlePaymentFailed(PaymentFailedEvent event) {
+        if (processedEventRepository.existsById(event.eventId())) {
+            log.info("Event {} already processed, skipping.", event.eventId());
+            return;
+        }
+
+        Order order = orderRepository.findById(event.orderId()).orElse(null);
+        if (order == null) {
+            log.error("Order not found for id: {}, skipping PaymentFailed event.", event.orderId());
+            return;
+        }
+
+        if (order.getStatus() == OrderStatus.FULFILLED) {
+            log.warn("Order {} is already FULFILLED, skipping PaymentFailed.", event.orderId());
+            saveProcessedEvent(event.eventId(), event.eventType());
+            return;
+        }
+
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            log.warn("Order {} is already CANCELLED, skipping PaymentFailed.", event.orderId());
+            saveProcessedEvent(event.eventId(), event.eventType());
+            return;
+        }
+
+        order.setStatus(OrderStatus.CANCELLED);
+        order.setCancelledAt(LocalDateTime.now());
+        orderRepository.save(order);
+
+        sagaStateRepository.findByOrderId(order.getId()).ifPresent(saga -> {
+            saga.setStatus(SagaStatus.COMPENSATED);
+            saga.setLastError(event.reason());
+            sagaStateRepository.save(saga);
+        });
+
+        saveProcessedEvent(event.eventId(), event.eventType());
+
+        OrderCancelledEvent cancelledEvent = new OrderCancelledEvent(
+                UUID.randomUUID(),
+                "OrderCancelled",
+                order.getId(),
+                order.getCustomerId(),
+                event.reason(),
+                LocalDateTime.now());
+
+        saveOutboxEvent(order.getId(), "OrderCancelled", cancelledEvent);
+
+        log.info("Order {} marked as CANCELLED due to payment failure: {}", order.getId(), event.reason());
+    }
+
+    private void saveProcessedEvent(UUID eventId, String eventType) {
+        ProcessedEvent processedEvent = new ProcessedEvent();
+        processedEvent.setEventId(eventId);
+        processedEvent.setEventType(eventType);
+        processedEventRepository.save(processedEvent);
+    }
+
+    private void saveOutboxEvent(UUID aggregateId, String eventType, Object payload) {
+        String json;
+        try {
+            json = objectMapper.writeValueAsString(payload);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Could not serialize " + eventType + " event", e);
+        }
+
+        OutboxEvent outboxEvent = new OutboxEvent();
+        outboxEvent.setAggregateId(aggregateId);
+        outboxEvent.setAggregateType("ORDER");
+        outboxEvent.setEventType(eventType);
+        outboxEvent.setPayload(json);
+        outboxEvent.setStatus(OutboxStatus.PENDING);
+        outboxEventRepository.save(outboxEvent);
     }
 
     private void validateCreateOrderRequest(CreateOrderRequest request) {
