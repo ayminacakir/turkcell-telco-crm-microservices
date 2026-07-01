@@ -1,5 +1,7 @@
 package com.turkcell.order_service.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.turkcell.order_service.client.CustomerClient;
 import com.turkcell.order_service.client.dto.CustomerResponse;
 import com.turkcell.order_service.client.dto.CustomerStatus;
@@ -15,6 +17,11 @@ import com.turkcell.order_service.enums.SagaStatus;
 import com.turkcell.order_service.exception.CustomerNotActiveException;
 import com.turkcell.order_service.exception.CustomerNotFoundException;
 import com.turkcell.order_service.exception.OrderNotFoundException;
+import com.turkcell.order_service.outbox.entity.OutboxEvent;
+import com.turkcell.order_service.outbox.enums.OutboxStatus;
+import com.turkcell.order_service.outbox.event.OrderCreatedEvent;
+import com.turkcell.order_service.outbox.event.OrderCreatedItemEvent;
+import com.turkcell.order_service.outbox.repository.OutboxEventRepository;
 import com.turkcell.order_service.repository.OrderItemRepository;
 import com.turkcell.order_service.repository.OrderRepository;
 import com.turkcell.order_service.repository.SagaStateRepository;
@@ -33,16 +40,22 @@ public class OrderService {
     private final OrderItemRepository orderItemRepository;
     private final SagaStateRepository sagaStateRepository;
     private final CustomerClient customerClient;
+    private final OutboxEventRepository outboxEventRepository;
+    private final ObjectMapper objectMapper;
 
     public OrderService(
             OrderRepository orderRepository,
             OrderItemRepository orderItemRepository,
             SagaStateRepository sagaStateRepository,
-            CustomerClient customerClient) {
+            CustomerClient customerClient,
+            OutboxEventRepository outboxEventRepository,
+            ObjectMapper objectMapper) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.sagaStateRepository = sagaStateRepository;
         this.customerClient = customerClient;
+        this.outboxEventRepository = outboxEventRepository;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional
@@ -71,6 +84,39 @@ public class OrderService {
         sagaState.setOrderId(savedOrder.getId());
         sagaState.setStatus(SagaStatus.PAYMENT_PENDING);
         sagaStateRepository.save(sagaState);
+
+        OrderCreatedEvent orderCreatedEvent = new OrderCreatedEvent(
+                UUID.randomUUID(),
+                "OrderCreated",
+                savedOrder.getId(),
+                savedOrder.getCustomerId(),
+                savedOrder.getTotalAmount(),
+                savedOrder.getCurrency(),
+                savedOrderItems.stream()
+                        .map(item -> new OrderCreatedItemEvent(
+                                item.getProductId(),
+                                item.getProductName(),
+                                item.getQuantity(),
+                                item.getUnitPrice(),
+                                item.getLineTotal()))
+                        .toList(),
+                LocalDateTime.now());
+
+        String payload;
+        try {
+            payload = objectMapper.writeValueAsString(orderCreatedEvent);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Could not serialize OrderCreated event", e);
+        }
+
+        OutboxEvent outboxEvent = new OutboxEvent();
+        outboxEvent.setAggregateId(savedOrder.getId());
+        outboxEvent.setAggregateType("ORDER");
+        outboxEvent.setEventType("OrderCreated");
+        outboxEvent.setPayload(payload);
+        outboxEvent.setStatus(OutboxStatus.PENDING);
+
+        outboxEventRepository.save(outboxEvent);
 
         return toOrderResponse(savedOrder, savedOrderItems);
     }

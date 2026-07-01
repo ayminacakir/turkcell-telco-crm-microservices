@@ -36,13 +36,15 @@ public class Order {
 
     @PrePersist
     public void prePersist() {
-        this.createdAt = LocalDateTime.now();
-        this.status = OrderStatus.DRAFT;
-
+        if (this.status == null) {
+            this.status = OrderStatus.DRAFT;
+        }
+        if (this.createdAt == null) {
+            this.createdAt = LocalDateTime.now();
+        }
         if (this.currency == null) {
             this.currency = "TRY";
         }
-
         if (this.totalAmount == null) {
             this.totalAmount = BigDecimal.ZERO;
         }
