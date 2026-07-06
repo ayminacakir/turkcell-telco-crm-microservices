@@ -20,6 +20,7 @@ import com.turkcell.order_service.exception.OrderNotFoundException;
 import com.turkcell.order_service.kafka.entity.ProcessedEvent;
 import com.turkcell.order_service.kafka.event.PaymentCompletedEvent;
 import com.turkcell.order_service.kafka.event.PaymentFailedEvent;
+import com.turkcell.order_service.kafka.event.SubscriptionActivatedEvent;
 import com.turkcell.order_service.kafka.repository.ProcessedEventRepository;
 import com.turkcell.order_service.outbox.entity.OutboxEvent;
 import com.turkcell.order_service.outbox.enums.OutboxStatus;
@@ -239,6 +240,44 @@ public class OrderService {
         saveOutboxEvent(order.getId(), "OrderCancelled", cancelledEvent);
 
         log.info("Order {} marked as CANCELLED due to payment failure: {}", order.getId(), event.reason());
+    }
+
+    @Transactional
+    public void handleSubscriptionActivated(SubscriptionActivatedEvent event) {
+        if (processedEventRepository.existsById(event.eventId())) {
+            log.info("Event {} already processed, skipping.", event.eventId());
+            return;
+        }
+
+        Order order = orderRepository.findById(event.orderId()).orElse(null);
+        if (order == null) {
+            log.error("Order not found for id: {}, skipping SubscriptionActivated event.", event.orderId());
+            return;
+        }
+
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            log.warn("Order {} is already CANCELLED, skipping SubscriptionActivated.", event.orderId());
+            saveProcessedEvent(event.eventId(), event.eventType());
+            return;
+        }
+
+        if (order.getStatus() == OrderStatus.FULFILLED) {
+            log.warn("Order {} is already FULFILLED, skipping SubscriptionActivated.", event.orderId());
+            saveProcessedEvent(event.eventId(), event.eventType());
+            return;
+        }
+
+        order.setStatus(OrderStatus.FULFILLED);
+        orderRepository.save(order);
+
+        sagaStateRepository.findByOrderId(order.getId()).ifPresent(saga -> {
+            saga.setStatus(SagaStatus.COMPLETED);
+            sagaStateRepository.save(saga);
+        });
+
+        saveProcessedEvent(event.eventId(), event.eventType());
+
+        log.info("Order {} marked as FULFILLED for subscription {}.", order.getId(), event.subscriptionId());
     }
 
     private void saveProcessedEvent(UUID eventId, String eventType) {
