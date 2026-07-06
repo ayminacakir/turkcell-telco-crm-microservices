@@ -11,6 +11,7 @@ import com.turkcell.product_catalog_service.service.TariffService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -63,9 +64,24 @@ public class TariffServiceImpl implements TariffService {
     @Override
     @Transactional(readOnly = true)
     public List<TariffResponse> getActive() {
+        LocalDate today = LocalDate.now();
         return tariffRepository.findByStatus(TariffStatus.ACTIVE).stream()
+                .filter(t -> isCurrentlyValid(t, today))
                 .map(this::toResponse)
                 .toList();
+    }
+
+    /**
+     * Bir tarifenin "gercekten bugun gecerli" olmasi icin status=ACTIVE olmasi yetmez;
+     * effectiveFrom/effectiveTo tarih araligina da bugunun dahil olmasi gerekir.
+     * effectiveTo null ise sinirsiz gecerlilik anlamina gelir.
+     */
+    private boolean isCurrentlyValid(Tariff tariff, LocalDate today) {
+        boolean startedAlready = tariff.getEffectiveFrom() == null
+                || !today.isBefore(tariff.getEffectiveFrom());
+        boolean notEndedYet = tariff.getEffectiveTo() == null
+                || !today.isAfter(tariff.getEffectiveTo());
+        return startedAlready && notEndedYet;
     }
 
     private TariffResponse toResponse(Tariff t) {

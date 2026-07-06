@@ -36,4 +36,19 @@ public class AddonController {
             @RequestParam(name = "tariffCode") String tariffCode) {
         return ResponseEntity.ok(addonService.getByTariffCode(tariffCode));
     }
+
+    /**
+     * Bir ek paketi bir tarifeye baglar. Idempotent: iliski zaten varsa 204 doner, hata firlatmaz.
+     */
+    @PutMapping("/{addonCode}/tariffs/{tariffCode}")
+    public ResponseEntity<Void> linkToTariff(@PathVariable String addonCode, @PathVariable String tariffCode) {
+        addonService.linkToTariff(tariffCode, addonCode);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{addonCode}/tariffs/{tariffCode}")
+    public ResponseEntity<Void> unlinkFromTariff(@PathVariable String addonCode, @PathVariable String tariffCode) {
+        addonService.unlinkFromTariff(tariffCode, addonCode);
+        return ResponseEntity.noContent().build();
+    }
 }
