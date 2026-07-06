@@ -117,4 +117,36 @@ class TariffServiceImplTest {
         verify(tariffRepository).findByStatus(TariffStatus.ACTIVE);
         verify(tariffRepository, never()).findAll();
     }
+
+    @Test
+    void getActive_shouldExcludeTariff_whenEffectiveFromIsInTheFuture() {
+        sampleTariff.setEffectiveFrom(LocalDate.now().plusDays(30));
+        when(tariffRepository.findByStatus(TariffStatus.ACTIVE)).thenReturn(List.of(sampleTariff));
+
+        List<TariffResponse> result = tariffService.getActive();
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void getActive_shouldExcludeTariff_whenEffectiveToIsInThePast() {
+        sampleTariff.setEffectiveFrom(LocalDate.now().minusDays(60));
+        sampleTariff.setEffectiveTo(LocalDate.now().minusDays(1));
+        when(tariffRepository.findByStatus(TariffStatus.ACTIVE)).thenReturn(List.of(sampleTariff));
+
+        List<TariffResponse> result = tariffService.getActive();
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void getActive_shouldIncludeTariff_whenEffectiveToIsNull() {
+        sampleTariff.setEffectiveFrom(LocalDate.now().minusDays(1));
+        sampleTariff.setEffectiveTo(null);
+        when(tariffRepository.findByStatus(TariffStatus.ACTIVE)).thenReturn(List.of(sampleTariff));
+
+        List<TariffResponse> result = tariffService.getActive();
+
+        assertThat(result).hasSize(1);
+    }
 }

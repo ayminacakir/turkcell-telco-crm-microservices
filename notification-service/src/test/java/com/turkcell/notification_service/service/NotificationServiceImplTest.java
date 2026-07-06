@@ -1,6 +1,5 @@
 package com.turkcell.notification_service.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.turkcell.notification_service.domain.entity.Notification;
 import com.turkcell.notification_service.domain.entity.NotificationTemplate;
 import com.turkcell.notification_service.domain.enums.NotificationChannel;
@@ -37,8 +36,6 @@ class NotificationServiceImplTest {
     private NotificationTemplateRepository templateRepository;
 
     private NotificationServiceImpl notificationService;
-
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
     void setUp() {
