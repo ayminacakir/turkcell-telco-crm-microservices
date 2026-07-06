@@ -15,6 +15,12 @@ import com.turkcell.subscription_service.enums.MsisdnStatus;
 import com.turkcell.subscription_service.enums.SimCardStatus;
 import com.turkcell.subscription_service.enums.SubscriptionStatus;
 import com.turkcell.subscription_service.exception.SubscriptionNotFoundException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.turkcell.subscription_service.outbox.entity.OutboxEvent;
+import com.turkcell.subscription_service.outbox.event.SubscriptionActivatedEvent;
+import com.turkcell.subscription_service.outbox.enums.OutboxStatus;
+import com.turkcell.subscription_service.outbox.repository.OutboxEventRepository;
 import com.turkcell.subscription_service.repository.MsisdnPoolRepository;
 import com.turkcell.subscription_service.repository.SimCardRepository;
 import com.turkcell.subscription_service.repository.SubscriptionRepository;
@@ -39,14 +45,20 @@ public class SubscriptionService {
     private final SubscriptionRepository subscriptionRepository;
     private final MsisdnPoolRepository msisdnPoolRepository;
     private final SimCardRepository simCardRepository;
+    private final OutboxEventRepository outboxEventRepository;
+    private final ObjectMapper objectMapper;
 
     public SubscriptionService(
             SubscriptionRepository subscriptionRepository,
             MsisdnPoolRepository msisdnPoolRepository,
-            SimCardRepository simCardRepository) {
+            SimCardRepository simCardRepository,
+            OutboxEventRepository outboxEventRepository,
+            ObjectMapper objectMapper) {
         this.subscriptionRepository = subscriptionRepository;
         this.msisdnPoolRepository = msisdnPoolRepository;
         this.simCardRepository = simCardRepository;
+        this.outboxEventRepository = outboxEventRepository;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional
@@ -115,6 +127,7 @@ public class SubscriptionService {
         subscription.setActivatedAt(LocalDateTime.now());
 
         Subscription savedSubscription = subscriptionRepository.save(subscription);
+        saveSubscriptionActivatedOutboxEvent(savedSubscription);
 
         return toSubscriptionResponse(savedSubscription);
     }
@@ -201,6 +214,36 @@ public class SubscriptionService {
     private Subscription findSubscriptionById(UUID id) {
         return subscriptionRepository.findById(id)
                 .orElseThrow(() -> new SubscriptionNotFoundException("Subscription with id " + id + " not found."));
+    }
+
+    private void saveSubscriptionActivatedOutboxEvent(Subscription subscription) {
+        SubscriptionActivatedEvent eventPayload = new SubscriptionActivatedEvent(
+                UUID.randomUUID(),
+                "SubscriptionActivated",
+                subscription.getOrderId(),
+                subscription.getId(),
+                subscription.getCustomerId(),
+                subscription.getTariffCode(),
+                subscription.getMsisdn(),
+                null,
+                null,
+                null,
+                subscription.getActivatedAt());
+
+        String payload;
+        try {
+            payload = objectMapper.writeValueAsString(eventPayload);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Failed to serialize SubscriptionActivated event", e);
+        }
+
+        OutboxEvent outboxEvent = new OutboxEvent();
+        outboxEvent.setAggregateId(subscription.getId());
+        outboxEvent.setAggregateType("SUBSCRIPTION");
+        outboxEvent.setEventType("SubscriptionActivated");
+        outboxEvent.setPayload(payload);
+        outboxEvent.setStatus(OutboxStatus.PENDING);
+        outboxEventRepository.save(outboxEvent);
     }
 
     private SubscriptionResponse toSubscriptionResponse(Subscription subscription) {
