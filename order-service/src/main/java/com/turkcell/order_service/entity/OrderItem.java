@@ -18,17 +18,33 @@ public class OrderItem {
     @Column(nullable = false)
     private UUID productId;
 
-    @Column(nullable = false, length = 150)
+    @Column(length = 150)
     private String productName;
+
+    @Column(length = 100)
+    private String productCode;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private com.turkcell.order_service.enums.OrderProductType productType;
 
     @Column(nullable = false)
     private Integer quantity;
 
-    @Column(nullable = false, precision = 12, scale = 2)
+    @Column(precision = 12, scale = 2)
     private BigDecimal unitPrice;
 
-    @Column(nullable = false, precision = 12, scale = 2)
+    @Column(precision = 12, scale = 2)
     private BigDecimal lineTotal;
+
+    @Column
+    private Integer minutesIncluded;
+
+    @Column
+    private Integer smsIncluded;
+
+    @Column
+    private Integer dataMbIncluded;
 
     public UUID getId() {
         return id;
@@ -58,6 +74,22 @@ public class OrderItem {
         this.productName = productName;
     }
 
+    public String getProductCode() {
+        return productCode;
+    }
+
+    public void setProductCode(String productCode) {
+        this.productCode = productCode;
+    }
+
+    public com.turkcell.order_service.enums.OrderProductType getProductType() {
+        return productType;
+    }
+
+    public void setProductType(com.turkcell.order_service.enums.OrderProductType productType) {
+        this.productType = productType;
+    }
+
     public Integer getQuantity() {
         return quantity;
     }
@@ -80,5 +112,29 @@ public class OrderItem {
 
     public void setLineTotal(BigDecimal lineTotal) {
         this.lineTotal = lineTotal;
+    }
+
+    public Integer getMinutesIncluded() {
+        return minutesIncluded;
+    }
+
+    public void setMinutesIncluded(Integer minutesIncluded) {
+        this.minutesIncluded = minutesIncluded;
+    }
+
+    public Integer getSmsIncluded() {
+        return smsIncluded;
+    }
+
+    public void setSmsIncluded(Integer smsIncluded) {
+        this.smsIncluded = smsIncluded;
+    }
+
+    public Integer getDataMbIncluded() {
+        return dataMbIncluded;
+    }
+
+    public void setDataMbIncluded(Integer dataMbIncluded) {
+        this.dataMbIncluded = dataMbIncluded;
     }
 }
