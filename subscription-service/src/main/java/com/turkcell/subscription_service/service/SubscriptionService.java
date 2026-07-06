@@ -17,9 +17,14 @@ import com.turkcell.subscription_service.enums.SubscriptionStatus;
 import com.turkcell.subscription_service.exception.SubscriptionNotFoundException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.turkcell.subscription_service.kafka.entity.ProcessedEvent;
+import com.turkcell.subscription_service.kafka.event.PaymentCompletedEvent;
+import com.turkcell.subscription_service.kafka.repository.ProcessedEventRepository;
 import com.turkcell.subscription_service.outbox.entity.OutboxEvent;
 import com.turkcell.subscription_service.outbox.event.SubscriptionActivatedEvent;
 import com.turkcell.subscription_service.outbox.enums.OutboxStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.turkcell.subscription_service.outbox.repository.OutboxEventRepository;
 import com.turkcell.subscription_service.repository.MsisdnPoolRepository;
 import com.turkcell.subscription_service.repository.SimCardRepository;
@@ -35,6 +40,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class SubscriptionService {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(SubscriptionService.class);
+
     // FR-16: MNP için tam state machine engine yerine sabit, doğrulanan geçiş tablosu.
     private static final Map<MnpStatus, Set<MnpStatus>> VALID_MNP_TRANSITIONS = Map.of(
             MnpStatus.NOT_REQUESTED, Set.of(MnpStatus.REQUESTED),
@@ -46,6 +53,7 @@ public class SubscriptionService {
     private final MsisdnPoolRepository msisdnPoolRepository;
     private final SimCardRepository simCardRepository;
     private final OutboxEventRepository outboxEventRepository;
+    private final ProcessedEventRepository processedEventRepository;
     private final ObjectMapper objectMapper;
 
     public SubscriptionService(
@@ -53,11 +61,13 @@ public class SubscriptionService {
             MsisdnPoolRepository msisdnPoolRepository,
             SimCardRepository simCardRepository,
             OutboxEventRepository outboxEventRepository,
+            ProcessedEventRepository processedEventRepository,
             ObjectMapper objectMapper) {
         this.subscriptionRepository = subscriptionRepository;
         this.msisdnPoolRepository = msisdnPoolRepository;
         this.simCardRepository = simCardRepository;
         this.outboxEventRepository = outboxEventRepository;
+        this.processedEventRepository = processedEventRepository;
         this.objectMapper = objectMapper;
     }
 
@@ -244,6 +254,97 @@ public class SubscriptionService {
         outboxEvent.setPayload(payload);
         outboxEvent.setStatus(OutboxStatus.PENDING);
         outboxEventRepository.save(outboxEvent);
+    }
+
+    @Transactional
+    public void handlePaymentCompleted(PaymentCompletedEvent event) {
+        LOGGER.info("Processing PaymentCompleted event eventId={} orderId={}", event.eventId(), event.orderId());
+
+        if (processedEventRepository.existsById(event.eventId())) {
+            LOGGER.info("PaymentCompleted event already processed eventId={}", event.eventId());
+            return;
+        }
+
+        if (subscriptionRepository.findByOrderId(event.orderId()).isPresent()) {
+            LOGGER.info("Subscription already exists for orderId={}, marking event processed", event.orderId());
+            saveProcessedEvent(event);
+            return;
+        }
+
+        var optionalMsisdn = msisdnPoolRepository.findFirstByStatus(MsisdnStatus.FREE);
+        if (optionalMsisdn.isEmpty()) {
+            LOGGER.warn("No free MSISDN available for PaymentCompleted event eventId={}", event.eventId());
+            return;
+        }
+
+        MsisdnPool msisdnPool = optionalMsisdn.get();
+        var optionalSimCard = simCardRepository.findByMsisdn(msisdnPool.getMsisdn())
+                .filter(simCard -> simCard.getStatus() == SimCardStatus.FREE);
+
+        if (optionalSimCard.isEmpty()) {
+            LOGGER.warn("No free SIM card available for MSISDN {} in PaymentCompleted event eventId={}",
+                    msisdnPool.getMsisdn(), event.eventId());
+            return;
+        }
+
+        SimCard simCard = optionalSimCard.get();
+
+        msisdnPool.setStatus(MsisdnStatus.ALLOCATED);
+        msisdnPoolRepository.save(msisdnPool);
+
+        simCard.setStatus(SimCardStatus.ACTIVE);
+        simCard.setMsisdn(msisdnPool.getMsisdn());
+        simCardRepository.save(simCard);
+
+        Subscription subscription = new Subscription();
+        subscription.setOrderId(event.orderId());
+        subscription.setCustomerId(event.customerId());
+        subscription.setMsisdn(msisdnPool.getMsisdn());
+        subscription.setTariffCode(event.tariffCode());
+        subscription.setStatus(SubscriptionStatus.ACTIVE);
+        subscription.setMnpStatus(MnpStatus.NOT_REQUESTED);
+        subscription.setActivatedAt(LocalDateTime.now());
+
+        Subscription savedSubscription = subscriptionRepository.save(subscription);
+
+        SubscriptionActivatedEvent activatedEvent = new SubscriptionActivatedEvent(
+                UUID.randomUUID(),
+                "SubscriptionActivated",
+                savedSubscription.getOrderId(),
+                savedSubscription.getId(),
+                savedSubscription.getCustomerId(),
+                savedSubscription.getTariffCode(),
+                savedSubscription.getMsisdn(),
+                event.minutesIncluded(),
+                event.smsIncluded(),
+                event.dataMbIncluded(),
+                savedSubscription.getActivatedAt());
+
+        String payload;
+        try {
+            payload = objectMapper.writeValueAsString(activatedEvent);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Failed to serialize SubscriptionActivated event", e);
+        }
+
+        OutboxEvent outboxEvent = new OutboxEvent();
+        outboxEvent.setAggregateId(savedSubscription.getId());
+        outboxEvent.setAggregateType("SUBSCRIPTION");
+        outboxEvent.setEventType("SubscriptionActivated");
+        outboxEvent.setPayload(payload);
+        outboxEvent.setStatus(OutboxStatus.PENDING);
+        outboxEventRepository.save(outboxEvent);
+
+        saveProcessedEvent(event);
+        LOGGER.info("Subscription created and event marked processed eventId={} subscriptionId={}",
+                event.eventId(), savedSubscription.getId());
+    }
+
+    private void saveProcessedEvent(PaymentCompletedEvent event) {
+        ProcessedEvent processedEvent = new ProcessedEvent();
+        processedEvent.setEventId(event.eventId());
+        processedEvent.setEventType(event.eventType());
+        processedEventRepository.save(processedEvent);
     }
 
     private SubscriptionResponse toSubscriptionResponse(Subscription subscription) {
