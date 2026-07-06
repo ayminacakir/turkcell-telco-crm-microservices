@@ -1,0 +1,35 @@
+### Hello check (Hafta 2)
+GET http://localhost:9009/hello
+
+### Şablon oluştur
+POST http://localhost:9009/api/v1/notification-templates
+Content-Type: application/json
+
+{
+  "code": "PAYMENT_RECEIVED",
+  "channel": "SMS",
+  "locale": "tr-TR",
+  "bodyTemplate": "Sayin musterimiz, {{amount}} {{currency}} tutarindaki odemeniz alinmistir."
+}
+
+### Şablonu code ile getir
+GET http://localhost:9009/api/v1/notification-templates/PAYMENT_RECEIVED
+
+### Tüm şablonları listele
+GET http://localhost:9009/api/v1/notification-templates
+
+### Manuel bildirim gönder (Kafka bağlanana kadar test amaçlı)
+POST http://localhost:9009/api/v1/notifications/send
+Content-Type: application/json
+
+{
+  "userId": "11111111-1111-1111-1111-111111111111",
+  "templateCode": "PAYMENT_RECEIVED",
+  "placeholders": {
+    "amount": "250.00",
+    "currency": "TRY"
+  }
+}
+
+### Kullanıcının bildirimlerini listele
+GET http://localhost:9009/api/v1/notifications?userId=11111111-1111-1111-1111-111111111111

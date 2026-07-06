@@ -302,15 +302,19 @@ Diyagramlar [dbdiagram.io](https://dbdiagram.io) üzerinde **database per servic
 | 5 | Tüm servislerin Entity ve Enum sınıfları | ✅ Tamamlandı |
 | 6 | Tüm servislerin application.yaml konfigürasyonları | ✅ Tamamlandı |
 | 7 | Her servise GET /hello endpoint'i | 🔄 Devam Ediyor |
-| 8 | Repository katmanı | 🔜 Planlanan |
-| 9 | Service katmanı | 🔜 Planlanan |
-| 10 | Controller katmanı (REST API) | 🔜 Planlanan |
-| 11 | DTO sınıfları | 🔜 Planlanan |
-| 12 | Global exception handling | 🔜 Planlanan |
-| 13 | Eureka Discovery Server | 🔜 Planlanan |
-| 14 | API Gateway | 🔜 Planlanan |
-| 15 | Kafka event'leri | 🔜 Planlanan |
-| 16 | Docker Compose | 🔜 Planlanan |
+| 8 | Repository katmanı | 🔄 Devam Ediyor |
+| 9 | Service katmanı | 🔄 Devam Ediyor |
+| 10 | Controller katmanı (REST API) | 🔄 Devam Ediyor |
+| 11 | DTO sınıfları | 🔄 Devam Ediyor |
+| 12 | Global exception handling | 🔄 Devam Ediyor |
+| 13 | Eureka Discovery Server | 🔜 Planlanan (iskelet main'de var, entegrasyon bekliyor) |
+| 14 | API Gateway | 🔜 Planlanan (iskelet main'de var, entegrasyon bekliyor) |
+| 15 | Kafka event'leri | 🔄 Devam Ediyor |
+| 16 | Docker Compose | ✅ Tamamlandı |
+
+> **Servis bazlı detay (7-12 ve 15 için):**
+> - ✅ **product-catalog-service, notification-service, ticket-service** (Nasrulla) — Repository/Service/Controller/DTO/Exception handling tamamlandı, GET /hello eklendi, notification-service Kafka consumer'ları (payment.completed/failed, quota.threshold.reached/exceeded) hazır ve test edildi.
+> - Diğer servislerin (customer, order, subscription, usage, billing, payment) güncel durumu için ilgili branch sahipleriyle kontrol edin.
 
 ---
 

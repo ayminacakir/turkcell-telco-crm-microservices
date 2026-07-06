@@ -1,1 +1,15 @@
 .DS_Store
+target/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+.idea/
+*.iml
+*.iws
+out/
+.vscode/
+.classpath
+.project
+.settings/
+*.log
+.env
