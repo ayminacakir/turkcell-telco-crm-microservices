@@ -12,4 +12,6 @@ import java.util.UUID;
 public interface BillCycleRepository extends JpaRepository<BillCycle, UUID> {
     List<BillCycle> findByCustomerId(UUID customerId);
     Optional<BillCycle> findByCustomerIdAndDayOfMonth(UUID customerId, int dayOfMonth);
+    boolean existsByCustomerId(UUID customerId);
+    
 }

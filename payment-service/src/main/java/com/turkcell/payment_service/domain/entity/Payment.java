@@ -62,4 +62,23 @@ public class Payment {
 
     public List<PaymentAttempt> getAttempts() { return attempts; }
     public void setAttempts(List<PaymentAttempt> attempts) { this.attempts = attempts; }
+
+    private UUID orderId;
+    private UUID customerId;
+
+    public UUID getOrderId() {
+        return orderId;
+    }
+
+    public void setOrderId(UUID orderId) {
+        this.orderId = orderId;
+    }
+
+    public UUID getCustomerId() {
+        return customerId;
+    }
+
+    public void setCustomerId(UUID customerId) {
+        this.customerId = customerId;
+    }
 }

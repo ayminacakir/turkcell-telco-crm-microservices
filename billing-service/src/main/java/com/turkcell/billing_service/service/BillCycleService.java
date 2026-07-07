@@ -2,6 +2,7 @@ package com.turkcell.billing_service.service;
 
 import com.turkcell.billing_service.dto.request.CreateBillCycleRequest;
 import com.turkcell.billing_service.dto.response.BillCycleResponse;
+import com.turkcell.billing_service.event.SubscriptionActivatedEvent;
 
 import java.util.List;
 import java.util.UUID;
@@ -11,4 +12,5 @@ public interface BillCycleService {
     List<BillCycleResponse> getByCustomerId(UUID customerId);
     BillCycleResponse getById(UUID id);
     void delete(UUID id);
+    void createBillCycleForSubscription(SubscriptionActivatedEvent event);
 }

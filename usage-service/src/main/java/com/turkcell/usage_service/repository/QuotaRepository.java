@@ -13,5 +13,7 @@ import java.util.UUID;
 public interface QuotaRepository extends JpaRepository<Quota, UUID> {
     List<Quota> findBySubscriptionId(UUID subscriptionId);
     Optional<Quota> findBySubscriptionIdAndPeriodStartLessThanEqualAndPeriodEndGreaterThanEqual(
-        UUID subscriptionId, LocalDate date1, LocalDate date2);
+    UUID subscriptionId, LocalDate date1, LocalDate date2);
+    boolean existsBySubscriptionId(UUID subscriptionId);
+    Optional<Quota> findFirstBySubscriptionIdOrderByPeriodStartDesc(UUID subscriptionId);
 }

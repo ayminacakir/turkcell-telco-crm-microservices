@@ -5,7 +5,10 @@ import com.turkcell.payment_service.domain.entity.PaymentAttempt;
 import com.turkcell.payment_service.dto.request.CreatePaymentRequest;
 import com.turkcell.payment_service.dto.response.PaymentAttemptResponse;
 import com.turkcell.payment_service.dto.response.PaymentResponse;
+import com.turkcell.payment_service.event.OrderCreatedEvent;
+import com.turkcell.payment_service.event.OrderCreatedItemEvent;
 import com.turkcell.payment_service.event.PaymentCompletedEvent;
+import com.turkcell.payment_service.event.PaymentFailedEvent;
 import com.turkcell.payment_service.kafka.KafkaProducerService;
 import com.turkcell.payment_service.repository.PaymentAttemptRepository;
 import com.turkcell.payment_service.repository.PaymentRepository;
@@ -16,7 +19,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -31,7 +33,6 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public PaymentResponse createPayment(CreatePaymentRequest request) {
-        // FR-26: İdempotency — aynı invoice için aktif ödeme var mı?
         paymentRepository.findByInvoiceIdAndStatusNot(request.invoiceId(), "FAILED")
             .ifPresent(existing -> {
                 throw new RuntimeException(
@@ -68,8 +69,6 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         int attemptNo = paymentAttemptRepository.countByPaymentId(id) + 1;
-
-        // Mock PSP — gerçekte banka API'si çağrılır
         boolean success = mockPaymentGateway(payment.getMethod());
 
         PaymentAttempt attempt = new PaymentAttempt();
@@ -78,49 +77,56 @@ public class PaymentServiceImpl implements PaymentService {
         attempt.setAttemptedAt(LocalDateTime.now());
 
         if (success) {
-    payment.setStatus("COMPLETED");
-    payment.setPaidAt(LocalDateTime.now());
-    payment.setExternalRef("PSP-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
-    attempt.setResponse("{\"status\":\"SUCCESS\",\"externalRef\":\"" + payment.getExternalRef() + "\"}");
-    
-    paymentAttemptRepository.save(attempt);
-    Payment saved = paymentRepository.save(payment);
-    
-    // Kafka event publish et
-    kafkaProducerService.publishPaymentCompleted(new PaymentCompletedEvent(
-        saved.getId(),
-        saved.getInvoiceId(),
-        saved.getAmount(),
-        saved.getMethod(),
-        "COMPLETED",
-        saved.getExternalRef(),
-        saved.getPaidAt()
-    ));
-    
-    log.info("Payment completed: {}", id);
-    return toResponse(saved);
-} else {
-    if (attemptNo >= 3) {
-        payment.setStatus("FAILED");
-        paymentAttemptRepository.save(attempt);
-        Payment saved = paymentRepository.save(payment);
-        
-        // Kafka failed event publish et
-        kafkaProducerService.publishPaymentFailed(new PaymentCompletedEvent(
-            saved.getId(),
-            saved.getInvoiceId(),
-            saved.getAmount(),
-            saved.getMethod(),
-            "FAILED",
-            null,
-            null
-        ));
-        return toResponse(saved);
-    }
-    attempt.setResponse("{\"status\":\"FAILED\",\"reason\":\"Insufficient funds\",\"attemptNo\":" + attemptNo + "}");
-    paymentAttemptRepository.save(attempt);
-    return toResponse(paymentRepository.save(payment));
-}
+            payment.setStatus("COMPLETED");
+            payment.setPaidAt(LocalDateTime.now());
+            payment.setExternalRef("PSP-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+            attempt.setResponse("{\"status\":\"SUCCESS\",\"externalRef\":\"" + payment.getExternalRef() + "\"}");
+
+            paymentAttemptRepository.save(attempt);
+            Payment saved = paymentRepository.save(payment);
+
+            kafkaProducerService.publishPaymentCompleted(new PaymentCompletedEvent(
+                    UUID.randomUUID(),
+                    "PaymentCompleted",
+                    saved.getId(),
+                    saved.getOrderId(),
+                    saved.getCustomerId(),
+                    saved.getAmount(),
+                    "TRY",
+                    "COMPLETED",
+                    saved.getPaidAt(),
+                    null,
+                    null,
+                    null,
+                    null
+            ));
+
+            log.info("Payment completed: {}", id);
+            return toResponse(saved);
+        } else {
+            if (attemptNo >= 3) {
+                payment.setStatus("FAILED");
+                paymentAttemptRepository.save(attempt);
+                Payment saved = paymentRepository.save(payment);
+
+                kafkaProducerService.publishPaymentFailed(new PaymentFailedEvent(
+                        UUID.randomUUID(),
+                        "PaymentFailed",
+                        saved.getId(),
+                        saved.getOrderId(),
+                        saved.getCustomerId(),
+                        saved.getAmount(),
+                        "TRY",
+                        "FAILED",
+                        "Insufficient funds",
+                        LocalDateTime.now()
+                ));
+                return toResponse(saved);
+            }
+            attempt.setResponse("{\"status\":\"FAILED\",\"reason\":\"Insufficient funds\",\"attemptNo\":" + attemptNo + "}");
+            paymentAttemptRepository.save(attempt);
+            return toResponse(paymentRepository.save(payment));
+        }
     }
 
     @Override
@@ -148,7 +154,89 @@ public class PaymentServiceImpl implements PaymentService {
                 )).collect(Collectors.toList());
     }
 
-    // Mock PSP — %80 başarı oranı
+    @Override
+    public void handleOrderCreated(OrderCreatedEvent event) {
+        if (paymentRepository.findByOrderId(event.orderId()).isPresent()) {
+            log.warn("Payment already exists for orderId: {}, skipping", event.orderId());
+            return;
+        }
+
+        Payment payment = new Payment();
+        payment.setOrderId(event.orderId());
+        payment.setCustomerId(event.customerId());
+        payment.setAmount(event.totalAmount());
+        payment.setMethod("CREDIT_CARD");
+        payment.setStatus("PENDING");
+        Payment saved = paymentRepository.save(payment);
+
+        processOrderPayment(saved.getId(), event);
+    }
+
+    private void processOrderPayment(UUID paymentId, OrderCreatedEvent orderEvent) {
+        Payment payment = findPaymentById(paymentId);
+        boolean success = mockPaymentGateway(payment.getMethod());
+
+        PaymentAttempt attempt = new PaymentAttempt();
+        attempt.setPayment(payment);
+        attempt.setAttemptNo(1);
+        attempt.setAttemptedAt(LocalDateTime.now());
+
+        OrderCreatedItemEvent tariffItem = orderEvent.items().stream()
+                .filter(item -> "TARIFF".equals(item.productType()))
+                .findFirst()
+                .orElse(null);
+
+        String tariffCode = tariffItem != null ? tariffItem.productCode() : null;
+        Integer minutesIncluded = tariffItem != null ? tariffItem.minutesIncluded() : null;
+        Integer smsIncluded = tariffItem != null ? tariffItem.smsIncluded() : null;
+        Integer dataMbIncluded = tariffItem != null ? tariffItem.dataMbIncluded() : null;
+
+        if (success) {
+            payment.setStatus("COMPLETED");
+            payment.setPaidAt(LocalDateTime.now());
+            payment.setExternalRef("PSP-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+            attempt.setResponse("{\"status\":\"SUCCESS\",\"externalRef\":\"" + payment.getExternalRef() + "\"}");
+            paymentAttemptRepository.save(attempt);
+            paymentRepository.save(payment);
+
+            kafkaProducerService.publishPaymentCompleted(new PaymentCompletedEvent(
+                    UUID.randomUUID(),
+                    "PaymentCompleted",
+                    payment.getId(),
+                    orderEvent.orderId(),
+                    orderEvent.customerId(),
+                    payment.getAmount(),
+                    orderEvent.currency(),
+                    "COMPLETED",
+                    payment.getPaidAt(),
+                    tariffCode,
+                    minutesIncluded,
+                    smsIncluded,
+                    dataMbIncluded
+            ));
+            log.info("Order payment completed: orderId={}, tariffCode={}", orderEvent.orderId(), tariffCode);
+        } else {
+            payment.setStatus("FAILED");
+            attempt.setResponse("{\"status\":\"FAILED\",\"reason\":\"Insufficient funds\"}");
+            paymentAttemptRepository.save(attempt);
+            paymentRepository.save(payment);
+
+            kafkaProducerService.publishPaymentFailed(new PaymentFailedEvent(
+                    UUID.randomUUID(),
+                    "PaymentFailed",
+                    payment.getId(),
+                    orderEvent.orderId(),
+                    orderEvent.customerId(),
+                    payment.getAmount(),
+                    orderEvent.currency(),
+                    "FAILED",
+                    "Insufficient funds",
+                    LocalDateTime.now()
+            ));
+            log.info("Order payment failed: orderId={}", orderEvent.orderId());
+        }
+    }
+
     private boolean mockPaymentGateway(String method) {
         return Math.random() > 0.2;
     }

@@ -3,9 +3,11 @@ package com.turkcell.billing_service.service.impl;
 import com.turkcell.billing_service.domain.entity.BillCycle;
 import com.turkcell.billing_service.dto.request.CreateBillCycleRequest;
 import com.turkcell.billing_service.dto.response.BillCycleResponse;
+import com.turkcell.billing_service.event.SubscriptionActivatedEvent;
 import com.turkcell.billing_service.repository.BillCycleRepository;
 import com.turkcell.billing_service.service.BillCycleService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -14,6 +16,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class BillCycleServiceImpl implements BillCycleService {
 
@@ -47,12 +50,43 @@ public class BillCycleServiceImpl implements BillCycleService {
         billCycleRepository.deleteById(id);
     }
 
+    @Override
+    public void createBillCycleForSubscription(SubscriptionActivatedEvent event) {
+        if (billCycleRepository.existsByCustomerId(event.customerId())) {
+            log.warn("BillCycle already exists for customerId: {}, skipping", event.customerId());
+            return;
+        }
+
+        LocalDate activationDate = event.activatedAt().toLocalDate();
+        int dayOfMonth = activationDate.getDayOfMonth();
+        LocalDate nextRunDate = calculateNextRunDateFromActivation(activationDate, dayOfMonth);
+
+        BillCycle billCycle = new BillCycle();
+        billCycle.setCustomerId(event.customerId());
+        billCycle.setDayOfMonth(dayOfMonth);
+        billCycle.setNextRunDate(nextRunDate);
+        billCycleRepository.save(billCycle);
+
+        log.info("BillCycle created for customerId: {}, nextRunDate: {}", event.customerId(), nextRunDate);
+    }
+
     private LocalDate calculateNextRunDate(int dayOfMonth) {
         LocalDate now = LocalDate.now();
-        LocalDate candidate = now.withDayOfMonth(dayOfMonth);
-        return candidate.isBefore(now) || candidate.isEqual(now)
-                ? candidate.plusMonths(1)
-                : candidate;
+        int safeDay = Math.min(dayOfMonth, now.lengthOfMonth());
+        LocalDate candidate = now.withDayOfMonth(safeDay);
+        if (!candidate.isAfter(now)) {
+            candidate = candidate.plusMonths(1);
+            candidate = candidate.withDayOfMonth(Math.min(dayOfMonth, candidate.lengthOfMonth()));
+        }
+        return candidate;
+    }
+
+    private LocalDate calculateNextRunDateFromActivation(LocalDate activationDate, int dayOfMonth) {
+        LocalDate nextRunDate = activationDate.plusMonths(1);
+        int lastDayOfNextMonth = nextRunDate.lengthOfMonth();
+        return dayOfMonth > lastDayOfNextMonth
+                ? nextRunDate.withDayOfMonth(lastDayOfNextMonth)
+                : nextRunDate.withDayOfMonth(dayOfMonth);
     }
 
     private BillCycleResponse toResponse(BillCycle cycle) {

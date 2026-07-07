@@ -11,7 +11,7 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class PaymentCompletedEvent {
+public class PaymentFailedEvent {
     private UUID eventId;
     private String eventType;
     private UUID paymentId;
@@ -20,9 +20,6 @@ public class PaymentCompletedEvent {
     private BigDecimal amount;
     private String currency;
     private String status;
-    private LocalDateTime paidAt;
-    private String tariffCode;
-    private Integer minutesIncluded;
-    private Integer smsIncluded;
-    private Integer dataMbIncluded;
+    private String reason;
+    private LocalDateTime failedAt;
 }
