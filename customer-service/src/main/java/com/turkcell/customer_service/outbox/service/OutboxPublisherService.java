@@ -1,10 +1,10 @@
-package com.turkcell.order_service.outbox.service;
+package com.turkcell.customer_service.outbox.service;
 
-import com.turkcell.order_service.outbox.entity.OutboxEvent;
-import com.turkcell.order_service.outbox.enums.OutboxStatus;
-import com.turkcell.order_service.outbox.repository.OutboxEventRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import com.turkcell.customer_service.outbox.entity.OutboxEvent;
+import com.turkcell.customer_service.outbox.enums.OutboxStatus;
+import com.turkcell.customer_service.outbox.repository.OutboxEventRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -13,24 +13,28 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
-@Slf4j
-@RequiredArgsConstructor
 public class OutboxPublisherService {
+
+    private static final Logger log = LoggerFactory.getLogger(OutboxPublisherService.class);
 
     private final OutboxEventRepository outboxEventRepository;
     private final KafkaTemplate<String, String> kafkaTemplate;
 
+    public OutboxPublisherService(OutboxEventRepository outboxEventRepository,
+                                   KafkaTemplate<String, String> kafkaTemplate) {
+        this.outboxEventRepository = outboxEventRepository;
+        this.kafkaTemplate = kafkaTemplate;
+    }
+
     @Scheduled(fixedDelay = 5000)
     public void publishPendingEvents() {
         List<OutboxEvent> pendingEvents = outboxEventRepository.findByStatus(OutboxStatus.PENDING);
-
         for (OutboxEvent event : pendingEvents) {
             String topic = resolveTopicName(event.getEventType());
             if (topic == null) {
                 log.warn("No topic mapping for eventType: {}", event.getEventType());
                 continue;
             }
-
             try {
                 kafkaTemplate.send(topic, event.getAggregateId().toString(), event.getPayload()).get();
                 event.setStatus(OutboxStatus.PUBLISHED);
@@ -40,21 +44,17 @@ public class OutboxPublisherService {
             } catch (Exception e) {
                 event.setStatus(OutboxStatus.FAILED);
                 outboxEventRepository.save(event);
-                log.error("Failed to publish outbox event [{}] to topic [{}]: {}", event.getId(), topic, e.getMessage());
+                log.error("Failed to publish outbox event [{}]: {}", event.getId(), e.getMessage());
             }
         }
     }
 
     private String resolveTopicName(String eventType) {
-        if ("OrderCreated".equals(eventType)) {
-            return "order.created";
-        }
-        if ("OrderCancelled".equals(eventType)) {
-            return "order.cancelled";
-        }
-        if ("OrderConfirmed".equals(eventType)) {
-            return "order.confirmed";
-        }
-        return null;
+        return switch (eventType) {
+            case "CustomerRegistered" -> "customer.registered";
+            case "CustomerKYCApproved" -> "customer.kyc.approved";
+            case "CustomerUpdated" -> "customer.updated";
+            default -> null;
+        };
     }
 }

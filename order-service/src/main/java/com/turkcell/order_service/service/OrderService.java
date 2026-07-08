@@ -27,6 +27,7 @@ import com.turkcell.order_service.kafka.repository.ProcessedEventRepository;
 import com.turkcell.order_service.outbox.entity.OutboxEvent;
 import com.turkcell.order_service.outbox.enums.OutboxStatus;
 import com.turkcell.order_service.outbox.event.OrderCancelledEvent;
+import com.turkcell.order_service.outbox.event.OrderConfirmedEvent;
 import com.turkcell.order_service.outbox.event.OrderCreatedEvent;
 import com.turkcell.order_service.outbox.event.OrderCreatedItemEvent;
 import com.turkcell.order_service.outbox.repository.OutboxEventRepository;
@@ -201,6 +202,13 @@ public class OrderService {
             saga.setStatus(SagaStatus.PAYMENT_COMPLETED);
             sagaStateRepository.save(saga);
         });
+
+        OrderConfirmedEvent confirmedEvent = new OrderConfirmedEvent(
+            UUID.randomUUID(), "OrderConfirmed",
+            order.getId(), order.getCustomerId(),
+            order.getTotalAmount(), order.getCurrency(),
+            LocalDateTime.now());
+        saveOutboxEvent(order.getId(), "OrderConfirmed", confirmedEvent);
 
         saveProcessedEvent(event.eventId(), event.eventType());
 

@@ -19,9 +19,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.turkcell.subscription_service.kafka.entity.ProcessedEvent;
 import com.turkcell.subscription_service.kafka.event.PaymentCompletedEvent;
+import com.turkcell.subscription_service.kafka.event.PaymentFailedEvent;
 import com.turkcell.subscription_service.kafka.repository.ProcessedEventRepository;
 import com.turkcell.subscription_service.outbox.entity.OutboxEvent;
 import com.turkcell.subscription_service.outbox.event.SubscriptionActivatedEvent;
+import com.turkcell.subscription_service.outbox.event.SubscriptionSuspendedEvent;
+import com.turkcell.subscription_service.outbox.event.SubscriptionTerminatedEvent;
 import com.turkcell.subscription_service.outbox.enums.OutboxStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -170,7 +173,9 @@ public class SubscriptionService {
 
         subscription.setStatus(SubscriptionStatus.SUSPENDED);
 
-        return toSubscriptionResponse(subscriptionRepository.save(subscription));
+        Subscription savedSuspended = subscriptionRepository.save(subscription);
+        saveSubscriptionSuspendedOutboxEvent(savedSuspended);
+        return toSubscriptionResponse(savedSuspended);
     }
 
     @Transactional
@@ -197,7 +202,9 @@ public class SubscriptionService {
         subscription.setStatus(SubscriptionStatus.TERMINATED);
         subscription.setTerminatedAt(LocalDateTime.now());
 
-        return toSubscriptionResponse(subscriptionRepository.save(subscription));
+        Subscription savedTerminated = subscriptionRepository.save(subscription);
+        saveSubscriptionTerminatedOutboxEvent(savedTerminated);
+        return toSubscriptionResponse(savedTerminated);
     }
 
     @Transactional
@@ -254,6 +261,79 @@ public class SubscriptionService {
         outboxEvent.setPayload(payload);
         outboxEvent.setStatus(OutboxStatus.PENDING);
         outboxEventRepository.save(outboxEvent);
+    }
+
+    private void saveSubscriptionSuspendedOutboxEvent(Subscription subscription) {
+        SubscriptionSuspendedEvent event = new SubscriptionSuspendedEvent(
+                UUID.randomUUID(),
+                "SubscriptionSuspended",
+                subscription.getId(),
+                subscription.getCustomerId(),
+                subscription.getMsisdn(),
+                subscription.getTariffCode(),
+                LocalDateTime.now());
+        String payload;
+        try {
+            payload = objectMapper.writeValueAsString(event);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Failed to serialize SubscriptionSuspended event", e);
+        }
+        OutboxEvent outboxEvent = new OutboxEvent();
+        outboxEvent.setAggregateId(subscription.getId());
+        outboxEvent.setAggregateType("SUBSCRIPTION");
+        outboxEvent.setEventType("SubscriptionSuspended");
+        outboxEvent.setPayload(payload);
+        outboxEvent.setStatus(OutboxStatus.PENDING);
+        outboxEventRepository.save(outboxEvent);
+    }
+
+    private void saveSubscriptionTerminatedOutboxEvent(Subscription subscription) {
+        SubscriptionTerminatedEvent event = new SubscriptionTerminatedEvent(
+                UUID.randomUUID(),
+                "SubscriptionTerminated",
+                subscription.getId(),
+                subscription.getCustomerId(),
+                subscription.getMsisdn(),
+                subscription.getTariffCode(),
+                LocalDateTime.now());
+        String payload;
+        try {
+            payload = objectMapper.writeValueAsString(event);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Failed to serialize SubscriptionTerminated event", e);
+        }
+        OutboxEvent outboxEvent = new OutboxEvent();
+        outboxEvent.setAggregateId(subscription.getId());
+        outboxEvent.setAggregateType("SUBSCRIPTION");
+        outboxEvent.setEventType("SubscriptionTerminated");
+        outboxEvent.setPayload(payload);
+        outboxEvent.setStatus(OutboxStatus.PENDING);
+        outboxEventRepository.save(outboxEvent);
+    }
+
+    @Transactional
+    public void handlePaymentFailed(PaymentFailedEvent event) {
+        LOGGER.info("Processing PaymentFailed event eventId={} orderId={}", event.eventId(), event.orderId());
+
+        if (processedEventRepository.existsById(event.eventId())) {
+            LOGGER.info("PaymentFailed event already processed eventId={}", event.eventId());
+            return;
+        }
+
+        subscriptionRepository.findByOrderId(event.orderId()).ifPresent(subscription -> {
+            if (subscription.getStatus() == SubscriptionStatus.ACTIVE) {
+                subscription.setStatus(SubscriptionStatus.SUSPENDED);
+                Subscription saved = subscriptionRepository.save(subscription);
+                saveSubscriptionSuspendedOutboxEvent(saved);
+                LOGGER.info("Suspended subscription {} due to payment failure orderId={}",
+                        saved.getId(), event.orderId());
+            }
+        });
+
+        ProcessedEvent processedEvent = new ProcessedEvent();
+        processedEvent.setEventId(event.eventId());
+        processedEvent.setEventType(event.eventType());
+        processedEventRepository.save(processedEvent);
     }
 
     @Transactional
