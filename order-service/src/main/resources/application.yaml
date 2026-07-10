@@ -18,3 +18,17 @@ spring:
             value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
     flyway:
         baseline-on-migrate: true
+    cloud:
+        openfeign:
+            circuitbreaker:
+                enabled: true
+
+resilience4j:
+    circuitbreaker:
+        instances:
+            customer-service:
+                sliding-window-size: 10
+                failure-rate-threshold: 50
+            product-catalog-service:
+                sliding-window-size: 10
+                failure-rate-threshold: 50

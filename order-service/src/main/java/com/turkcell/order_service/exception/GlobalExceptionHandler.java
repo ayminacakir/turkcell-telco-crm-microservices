@@ -61,7 +61,20 @@ public class GlobalExceptionHandler {
             HttpServletRequest request) {
         ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.SERVICE_UNAVAILABLE);
         problemDetail.setTitle("Dependent service unavailable");
-        problemDetail.setDetail("Customer service is currently unavailable. Please try again later.");
+        problemDetail.setDetail("A dependent service is currently unavailable. Please try again later.");
+        problemDetail.setProperty("path", request.getRequestURI());
+        problemDetail.setProperty("timestamp", LocalDateTime.now());
+
+        return problemDetail;
+    }
+
+    @ExceptionHandler(ServiceUnavailableException.class)
+    public ProblemDetail handleServiceUnavailable(
+            ServiceUnavailableException exception,
+            HttpServletRequest request) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.SERVICE_UNAVAILABLE);
+        problemDetail.setTitle("Service unavailable");
+        problemDetail.setDetail(exception.getMessage());
         problemDetail.setProperty("path", request.getRequestURI());
         problemDetail.setProperty("timestamp", LocalDateTime.now());
 
