@@ -22,6 +22,7 @@ import com.turkcell.customer_service.excepiton.CustomerNotFoundException;
 import com.turkcell.customer_service.outbox.entity.OutboxEvent;
 import com.turkcell.customer_service.outbox.enums.OutboxStatus;
 import com.turkcell.customer_service.outbox.event.CustomerKYCApprovedEvent;
+import com.turkcell.customer_service.outbox.event.CustomerKYCRejectedEvent;
 import com.turkcell.customer_service.outbox.event.CustomerRegisteredEvent;
 import com.turkcell.customer_service.outbox.event.CustomerUpdatedEvent;
 import com.turkcell.customer_service.outbox.repository.OutboxEventRepository;
@@ -147,7 +148,14 @@ public class CustomerService {
 
         customer.setStatus(CustomerStatus.REJECTED);
 
-        return toResponse(customerRepository.save(customer));
+        Customer saved = customerRepository.save(customer);
+
+        saveOutboxEvent(saved.getId(), "CustomerKYCRejected",
+                new CustomerKYCRejectedEvent(
+                        UUID.randomUUID(), "CustomerKYCRejected",
+                        saved.getId(), LocalDateTime.now()));
+
+        return toResponse(saved);
     }
 
     @Transactional
