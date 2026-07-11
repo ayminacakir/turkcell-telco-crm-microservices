@@ -7,13 +7,14 @@ import com.turkcell.usage_service.dto.request.CreateUsageRecordRequest;
 import com.turkcell.usage_service.dto.response.QuotaResponse;
 import com.turkcell.usage_service.dto.response.UsageRecordResponse;
 import com.turkcell.usage_service.event.QuotaThresholdEvent;
-import com.turkcell.usage_service.kafka.UsageKafkaProducer;
+import com.turkcell.usage_service.outbox.service.OutboxEventWriter;
 import com.turkcell.usage_service.repository.QuotaRepository;
 import com.turkcell.usage_service.repository.UsageRecordRepository;
 import com.turkcell.usage_service.service.UsageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -26,11 +27,16 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UsageServiceImpl implements UsageService {
 
+    private static final String QUOTA_AGGREGATE_TYPE = "Quota";
+    private static final String QUOTA_THRESHOLD_REACHED_EVENT = "QuotaThresholdReached";
+    private static final String QUOTA_EXCEEDED_EVENT = "QuotaExceeded";
+
     private final UsageRecordRepository usageRecordRepository;
     private final QuotaRepository quotaRepository;
-    private final UsageKafkaProducer kafkaProducer;
+    private final OutboxEventWriter outboxEventWriter;
 
     @Override
+    @Transactional
     public UsageRecordResponse recordUsage(CreateUsageRecordRequest request) {
         // Kullanım kaydı oluştur
         UsageRecord record = new UsageRecord();
@@ -124,14 +130,16 @@ public class UsageServiceImpl implements UsageService {
 
         // %100 aşıldı mı?
         if (after == 0 && before > 0) {
-            kafkaProducer.publishQuotaExceeded(
-                new QuotaThresholdEvent(subscriptionId, type, "PERCENT_100", 0));
+            QuotaThresholdEvent event = new QuotaThresholdEvent(
+                    UUID.randomUUID(), QUOTA_EXCEEDED_EVENT, subscriptionId, type, "PERCENT_100", 0);
+            outboxEventWriter.write(subscriptionId, QUOTA_AGGREGATE_TYPE, QUOTA_EXCEEDED_EVENT, event);
             log.warn("Quota EXCEEDED for subscription: {} type: {}", subscriptionId, type);
         }
         // %80 geçildi mi? (önceden geçilmemişse)
         else if (usedPercent >= 80 && beforePercent < 80) {
-            kafkaProducer.publishThresholdReached(
-                new QuotaThresholdEvent(subscriptionId, type, "PERCENT_80", after));
+            QuotaThresholdEvent event = new QuotaThresholdEvent(
+                    UUID.randomUUID(), QUOTA_THRESHOLD_REACHED_EVENT, subscriptionId, type, "PERCENT_80", after);
+            outboxEventWriter.write(subscriptionId, QUOTA_AGGREGATE_TYPE, QUOTA_THRESHOLD_REACHED_EVENT, event);
             log.info("Quota 80% reached for subscription: {} type: {}", subscriptionId, type);
         }
     }

@@ -16,6 +16,10 @@ public class BillCycle {
     @Column(name = "customer_id", nullable = false)
     private UUID customerId;
 
+    // subscription.activated event'inden gelir; manuel olusturulan cycle'larda bos olabilir.
+    @Column(name = "subscription_id")
+    private UUID subscriptionId;
+
     @Column(name = "day_of_month", nullable = false)
     private Integer dayOfMonth;
 
@@ -29,6 +33,9 @@ public class BillCycle {
 
     public UUID getCustomerId() { return customerId; }
     public void setCustomerId(UUID customerId) { this.customerId = customerId; }
+
+    public UUID getSubscriptionId() { return subscriptionId; }
+    public void setSubscriptionId(UUID subscriptionId) { this.subscriptionId = subscriptionId; }
 
     public Integer getDayOfMonth() { return dayOfMonth; }
     public void setDayOfMonth(Integer dayOfMonth) { this.dayOfMonth = dayOfMonth; }

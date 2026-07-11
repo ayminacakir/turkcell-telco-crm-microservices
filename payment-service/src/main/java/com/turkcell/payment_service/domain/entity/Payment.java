@@ -16,8 +16,15 @@ public class Payment {
     @Column(name = "id", updatable = false, nullable = false)
     private UUID id;
 
-    @Column(name = "invoice_id", nullable = false)
+    // Siparis odemelerinde (order.created akisi) fatura henuz olmadigi icin nullable.
+    @Column(name = "invoice_id")
     private UUID invoiceId;
+
+    @Column(name = "order_id")
+    private UUID orderId;
+
+    @Column(name = "customer_id")
+    private UUID customerId;
 
     @Column(name = "amount", nullable = false, precision = 12, scale = 2)
     private BigDecimal amount;
@@ -63,22 +70,9 @@ public class Payment {
     public List<PaymentAttempt> getAttempts() { return attempts; }
     public void setAttempts(List<PaymentAttempt> attempts) { this.attempts = attempts; }
 
-    private UUID orderId;
-    private UUID customerId;
+    public UUID getOrderId() { return orderId; }
+    public void setOrderId(UUID orderId) { this.orderId = orderId; }
 
-    public UUID getOrderId() {
-        return orderId;
-    }
-
-    public void setOrderId(UUID orderId) {
-        this.orderId = orderId;
-    }
-
-    public UUID getCustomerId() {
-        return customerId;
-    }
-
-    public void setCustomerId(UUID customerId) {
-        this.customerId = customerId;
-    }
+    public UUID getCustomerId() { return customerId; }
+    public void setCustomerId(UUID customerId) { this.customerId = customerId; }
 }

@@ -4,11 +4,14 @@ import com.turkcell.billing_service.domain.entity.BillCycle;
 import com.turkcell.billing_service.dto.request.CreateBillCycleRequest;
 import com.turkcell.billing_service.dto.response.BillCycleResponse;
 import com.turkcell.billing_service.event.SubscriptionActivatedEvent;
+import com.turkcell.billing_service.kafka.entity.ProcessedEvent;
+import com.turkcell.billing_service.kafka.repository.ProcessedEventRepository;
 import com.turkcell.billing_service.repository.BillCycleRepository;
 import com.turkcell.billing_service.service.BillCycleService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -21,6 +24,7 @@ import java.util.stream.Collectors;
 public class BillCycleServiceImpl implements BillCycleService {
 
     private final BillCycleRepository billCycleRepository;
+    private final ProcessedEventRepository processedEventRepository;
 
     @Override
     public BillCycleResponse create(CreateBillCycleRequest request) {
@@ -51,23 +55,34 @@ public class BillCycleServiceImpl implements BillCycleService {
     }
 
     @Override
+    @Transactional
     public void createBillCycleForSubscription(SubscriptionActivatedEvent event) {
-        if (billCycleRepository.existsByCustomerId(event.customerId())) {
-            log.warn("BillCycle already exists for customerId: {}, skipping", event.customerId());
+        if (event.eventId() != null && processedEventRepository.existsById(event.eventId())) {
+            log.warn("SubscriptionActivated event {} already processed, skipping", event.eventId());
             return;
         }
 
-        LocalDate activationDate = event.activatedAt().toLocalDate();
-        int dayOfMonth = activationDate.getDayOfMonth();
-        LocalDate nextRunDate = calculateNextRunDateFromActivation(activationDate, dayOfMonth);
+        if (billCycleRepository.existsByCustomerId(event.customerId())) {
+            log.warn("BillCycle already exists for customerId: {}, skipping", event.customerId());
+        } else {
+            LocalDate activationDate = event.activatedAt().toLocalDate();
+            int dayOfMonth = activationDate.getDayOfMonth();
+            LocalDate nextRunDate = calculateNextRunDateFromActivation(activationDate, dayOfMonth);
 
-        BillCycle billCycle = new BillCycle();
-        billCycle.setCustomerId(event.customerId());
-        billCycle.setDayOfMonth(dayOfMonth);
-        billCycle.setNextRunDate(nextRunDate);
-        billCycleRepository.save(billCycle);
+            BillCycle billCycle = new BillCycle();
+            billCycle.setCustomerId(event.customerId());
+            billCycle.setSubscriptionId(event.subscriptionId());
+            billCycle.setDayOfMonth(dayOfMonth);
+            billCycle.setNextRunDate(nextRunDate);
+            billCycleRepository.save(billCycle);
 
-        log.info("BillCycle created for customerId: {}, nextRunDate: {}", event.customerId(), nextRunDate);
+            log.info("BillCycle created for customerId: {}, subscriptionId: {}, nextRunDate: {}",
+                    event.customerId(), event.subscriptionId(), nextRunDate);
+        }
+
+        if (event.eventId() != null) {
+            processedEventRepository.save(new ProcessedEvent(event.eventId(), "SubscriptionActivated"));
+        }
     }
 
     private LocalDate calculateNextRunDate(int dayOfMonth) {

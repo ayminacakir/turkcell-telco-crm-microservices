@@ -3,6 +3,7 @@ package com.turkcell.billing_service.service;
 import com.turkcell.billing_service.dto.request.CreateInvoiceRequest;
 import com.turkcell.billing_service.dto.response.InvoiceLineResponse;
 import com.turkcell.billing_service.dto.response.InvoiceResponse;
+import com.turkcell.billing_service.event.PaymentCompletedEvent;
 
 import java.util.List;
 import java.util.UUID;
@@ -14,4 +15,5 @@ public interface InvoiceService {
     List<InvoiceResponse> getBySubscriptionId(UUID subscriptionId);
     InvoiceResponse updateStatus(UUID id, String status);
     List<InvoiceLineResponse> getLinesByInvoiceId(UUID invoiceId);
+    void handlePaymentCompleted(PaymentCompletedEvent event);
 }
