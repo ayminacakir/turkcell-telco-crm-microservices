@@ -22,7 +22,8 @@ public class OutboxPublisherService {
 
     private static final Map<String, String> TOPICS_BY_EVENT_TYPE = Map.of(
             "PaymentCompleted", "payment.completed",
-            "PaymentFailed", "payment.failed"
+            "PaymentFailed", "payment.failed",
+            "PaymentRefunded", "payment.refunded"
     );
 
     private final OutboxEventRepository outboxEventRepository;

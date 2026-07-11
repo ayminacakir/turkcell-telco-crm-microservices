@@ -41,6 +41,18 @@ public class Payment {
     @Column(name = "paid_at")
     private LocalDateTime paidAt;
 
+    @Column(name = "payment_request_id", unique = true)
+    private UUID paymentRequestId;
+
+    @Column(name = "retry_count", nullable = false)
+    private Integer retryCount = 0;
+
+    @Column(name = "next_retry_at")
+    private LocalDateTime nextRetryAt;
+
+    @Column(name = "first_failed_at")
+    private LocalDateTime firstFailedAt;
+
     @OneToMany(mappedBy = "payment", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PaymentAttempt> attempts = new ArrayList<>();
 
@@ -66,6 +78,18 @@ public class Payment {
 
     public LocalDateTime getPaidAt() { return paidAt; }
     public void setPaidAt(LocalDateTime paidAt) { this.paidAt = paidAt; }
+
+    public UUID getPaymentRequestId() { return paymentRequestId; }
+    public void setPaymentRequestId(UUID paymentRequestId) { this.paymentRequestId = paymentRequestId; }
+
+    public Integer getRetryCount() { return retryCount; }
+    public void setRetryCount(Integer retryCount) { this.retryCount = retryCount; }
+
+    public LocalDateTime getNextRetryAt() { return nextRetryAt; }
+    public void setNextRetryAt(LocalDateTime nextRetryAt) { this.nextRetryAt = nextRetryAt; }
+
+    public LocalDateTime getFirstFailedAt() { return firstFailedAt; }
+    public void setFirstFailedAt(LocalDateTime firstFailedAt) { this.firstFailedAt = firstFailedAt; }
 
     public List<PaymentAttempt> getAttempts() { return attempts; }
     public void setAttempts(List<PaymentAttempt> attempts) { this.attempts = attempts; }

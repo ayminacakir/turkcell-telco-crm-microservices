@@ -50,4 +50,13 @@ public class InvoiceController {
     public ResponseEntity<List<InvoiceLineResponse>> getLines(@PathVariable UUID id) {
         return ResponseEntity.ok(invoiceService.getLinesByInvoiceId(id));
     }
+
+    @GetMapping("/{id}/pdf")
+    public ResponseEntity<byte[]> getPdf(@PathVariable UUID id) {
+        byte[] pdf = invoiceService.generatePdf(id);
+        return ResponseEntity.ok()
+                .header("Content-Type", "application/pdf")
+                .header("Content-Disposition", "attachment; filename=invoice-" + id + ".pdf")
+                .body(pdf);
+    }
 }

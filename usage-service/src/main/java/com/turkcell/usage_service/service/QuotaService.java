@@ -37,8 +37,12 @@ public class QuotaService {
 
             Quota quota = new Quota();
             quota.setSubscriptionId(event.subscriptionId());
+            quota.setCustomerId(event.customerId());
             quota.setPeriodStart(periodStart);
             quota.setPeriodEnd(periodEnd);
+            quota.setMinutesTotal(event.minutesIncluded() != null ? event.minutesIncluded() : 0);
+            quota.setSmsTotal(event.smsIncluded() != null ? event.smsIncluded() : 0);
+            quota.setMbTotal(event.dataMbIncluded() != null ? event.dataMbIncluded() : 0);
             quota.setMinutesRemaining(event.minutesIncluded());
             quota.setSmsRemaining(event.smsIncluded());
             quota.setMbRemaining(event.dataMbIncluded());

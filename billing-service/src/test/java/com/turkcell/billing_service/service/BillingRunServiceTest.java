@@ -1,5 +1,6 @@
 package com.turkcell.billing_service.service;
 
+import com.turkcell.billing_service.config.BillingProperties;
 import com.turkcell.billing_service.domain.entity.BillCycle;
 import com.turkcell.billing_service.domain.entity.Invoice;
 import com.turkcell.billing_service.outbox.service.OutboxEventWriter;
@@ -37,7 +38,13 @@ class BillingRunServiceTest {
     private InvoiceRepository invoiceRepository;
 
     @Mock
+    private UsageAggregationService usageAggregationService;
+
+    @Mock
     private OutboxEventWriter outboxEventWriter;
+
+    @Mock
+    private BillingProperties billingProperties;
 
     @InjectMocks
     private BillingRunService billingRunService;
@@ -58,19 +65,23 @@ class BillingRunServiceTest {
         BillCycle cycle = new BillCycle();
         cycle.setCustomerId(customerId);
         cycle.setSubscriptionId(subscriptionId);
+        cycle.setMonthlyFee(new BigDecimal("149.90"));
         cycle.setDayOfMonth(LocalDate.now().getDayOfMonth());
         cycle.setNextRunDate(LocalDate.now());
         return cycle;
     }
 
-    // --- Happy path ---
-
     @Test
     void runBilling_shouldCreateInvoiceAndPublishInvoiceGenerated_whenCycleIsDue() {
+        when(billingProperties.resolveMonthlyFee(any())).thenReturn(new BigDecimal("149.90"));
+        when(billingProperties.getTaxRate()).thenReturn(new BigDecimal("0.20"));
+        when(billingProperties.getOverage()).thenReturn(new BillingProperties.Overage());
+
         BillCycle cycle = dueBillCycle();
         when(billCycleRepository.findAll()).thenReturn(List.of(cycle));
         when(invoiceRepository.findByCustomerId(customerId)).thenReturn(List.of());
         when(invoiceRepository.save(any(Invoice.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(usageAggregationService.findForPeriod(any(), any(), any())).thenReturn(null);
 
         billingRunService.runBilling();
 
@@ -78,8 +89,8 @@ class BillingRunServiceTest {
         Invoice saved = invoiceCaptor.getValue();
         assertThat(saved.getCustomerId()).isEqualTo(customerId);
         assertThat(saved.getSubscriptionId()).isEqualTo(subscriptionId);
-        assertThat(saved.getStatus()).isEqualTo("DRAFT");
-        assertThat(saved.getGrandTotal()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(saved.getStatus()).isEqualTo("ISSUED");
+        assertThat(saved.getGrandTotal()).isEqualByComparingTo("179.88");
 
         verify(outboxEventWriter).write(any(), eq("Invoice"), eq("InvoiceGenerated"), any());
         assertThat(cycle.getNextRunDate()).isEqualTo(LocalDate.now().plusMonths(1));
@@ -96,8 +107,6 @@ class BillingRunServiceTest {
         verify(invoiceRepository, never()).save(any());
         verify(outboxEventWriter, never()).write(any(), anyString(), anyString(), any());
     }
-
-    // --- Idempotency ---
 
     @Test
     void runBilling_shouldNotCreateDuplicateInvoice_whenPeriodAlreadyInvoiced() {

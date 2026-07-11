@@ -1,8 +1,8 @@
 # Usage Service
 
 Kota (Quota) ve CDR kullanım kayıtları (UsageRecord). `subscription.activated`
-event'i ile kota açar; kullanım kaydında kota düşer, %80 ve %100 eşiklerinde
-event'leri **Kafka Outbox Pattern** ile yayınlar.
+event'i ile kota açar; CDR event'lerini Kafka üzerinden işler, kullanımda kota düşer,
+%80/%100 eşiklerinde ve aşım durumunda event'leri **Kafka Outbox Pattern** ile yayınlar.
 
 ## Port / Veritabanı
 
@@ -10,7 +10,7 @@ event'leri **Kafka Outbox Pattern** ile yayınlar.
 |---|---|
 | Port | 9006 |
 | DB | `usage_db` (schema: `usage_service`) |
-| Migration | Flyway — `src/main/resources/db/migration/V1__init_schema.sql` |
+| Migration | Flyway — `V1__init_schema.sql`, `V2__add_quota_overage_tracking.sql` |
 
 ## Konfigürasyon
 
@@ -28,6 +28,7 @@ event'leri **Kafka Outbox Pattern** ile yayınlar.
 | Topic | Event | Davranış |
 |---|---|---|
 | `subscription.activated` | SubscriptionActivated | Quota oluşturur; `processed_events` ile idempotent |
+| `cdr.recorded` | CdrRecorded | CDR kullanımını işler; kota düşer (FR-17) |
 
 **Publish (outbox üzerinden, 5 sn'de bir):**
 
@@ -35,12 +36,14 @@ event'leri **Kafka Outbox Pattern** ile yayınlar.
 |---|---|---|
 | `quota.threshold.reached` | QuotaThresholdReached | Kullanım %80'i geçince |
 | `quota.exceeded` | QuotaExceeded | Kota tükenince (%100) |
+| `usage.aggregated` | UsageAggregated | Aşım oluştuğunda billing'e iletilir (FR-20) |
 
-## CDR Simülatörü
+## CDR Simülatörü (FR-17)
 
 `usage.cdr-simulator.enabled=true` yapıldığında, aktif kotası olan rastgele bir
-abonelik için periyodik olarak rastgele VOICE/SMS/DATA kullanımı üretir
-(`CDR-SIM-xxxx` referanslı). Kota aşımı senaryosunu uçtan uca test etmek içindir.
+abonelik için periyodik olarak rastgele VOICE/SMS/DATA kullanımı üretir ve
+`cdr.recorded` topic'ine yazar (`CDR-SIM-xxxx` referanslı). Usage Service bu
+event'i consume ederek kullanımı işler.
 
 ## Endpoints
 

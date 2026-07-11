@@ -20,6 +20,12 @@ public class BillCycle {
     @Column(name = "subscription_id")
     private UUID subscriptionId;
 
+    @Column(name = "tariff_code", length = 50)
+    private String tariffCode;
+
+    @Column(name = "monthly_fee", precision = 12, scale = 2)
+    private java.math.BigDecimal monthlyFee;
+
     @Column(name = "day_of_month", nullable = false)
     private Integer dayOfMonth;
 
@@ -36,6 +42,12 @@ public class BillCycle {
 
     public UUID getSubscriptionId() { return subscriptionId; }
     public void setSubscriptionId(UUID subscriptionId) { this.subscriptionId = subscriptionId; }
+
+    public String getTariffCode() { return tariffCode; }
+    public void setTariffCode(String tariffCode) { this.tariffCode = tariffCode; }
+
+    public java.math.BigDecimal getMonthlyFee() { return monthlyFee; }
+    public void setMonthlyFee(java.math.BigDecimal monthlyFee) { this.monthlyFee = monthlyFee; }
 
     public Integer getDayOfMonth() { return dayOfMonth; }
     public void setDayOfMonth(Integer dayOfMonth) { this.dayOfMonth = dayOfMonth; }

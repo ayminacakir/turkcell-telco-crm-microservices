@@ -57,6 +57,9 @@ class UsageServiceImplTest {
         quota.setSubscriptionId(subscriptionId);
         quota.setPeriodStart(LocalDate.now().minusDays(5));
         quota.setPeriodEnd(LocalDate.now().plusDays(25));
+        quota.setMinutesTotal(100);
+        quota.setSmsTotal(100);
+        quota.setMbTotal(100);
         quota.setMinutesRemaining(100);
         quota.setSmsRemaining(100);
         quota.setMbRemaining(100);

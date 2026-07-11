@@ -4,8 +4,10 @@ import com.turkcell.billing_service.domain.entity.Invoice;
 import com.turkcell.billing_service.event.PaymentCompletedEvent;
 import com.turkcell.billing_service.kafka.entity.ProcessedEvent;
 import com.turkcell.billing_service.kafka.repository.ProcessedEventRepository;
+import com.turkcell.billing_service.outbox.service.OutboxEventWriter;
 import com.turkcell.billing_service.repository.InvoiceLineRepository;
 import com.turkcell.billing_service.repository.InvoiceRepository;
+import com.turkcell.billing_service.service.InvoicePdfService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,6 +23,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -36,6 +39,12 @@ class InvoiceServiceImplTest {
 
     @Mock
     private ProcessedEventRepository processedEventRepository;
+
+    @Mock
+    private OutboxEventWriter outboxEventWriter;
+
+    @Mock
+    private InvoicePdfService invoicePdfService;
 
     @InjectMocks
     private InvoiceServiceImpl invoiceService;
@@ -68,6 +77,7 @@ class InvoiceServiceImplTest {
 
         assertThat(invoice.getStatus()).isEqualTo("PAID");
         verify(invoiceRepository).save(invoice);
+        verify(outboxEventWriter).write(any(), eq("Invoice"), eq("InvoicePaid"), any());
         verify(processedEventRepository).save(any(ProcessedEvent.class));
     }
 
@@ -83,6 +93,7 @@ class InvoiceServiceImplTest {
 
         assertThat(invoice.getStatus()).isEqualTo("OVERDUE");
         verify(invoiceRepository).save(invoice);
+        verify(outboxEventWriter).write(any(), eq("Invoice"), eq("InvoiceOverdue"), any());
     }
 
     // --- Idempotency ---

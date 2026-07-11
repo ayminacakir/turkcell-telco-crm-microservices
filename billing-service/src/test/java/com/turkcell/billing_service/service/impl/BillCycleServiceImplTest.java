@@ -1,5 +1,6 @@
 package com.turkcell.billing_service.service.impl;
 
+import com.turkcell.billing_service.config.BillingProperties;
 import com.turkcell.billing_service.domain.entity.BillCycle;
 import com.turkcell.billing_service.event.SubscriptionActivatedEvent;
 import com.turkcell.billing_service.kafka.entity.ProcessedEvent;
@@ -14,6 +15,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -33,6 +35,9 @@ class BillCycleServiceImplTest {
     @Mock
     private ProcessedEventRepository processedEventRepository;
 
+    @Mock
+    private BillingProperties billingProperties;
+
     @InjectMocks
     private BillCycleServiceImpl billCycleService;
 
@@ -48,6 +53,7 @@ class BillCycleServiceImplTest {
         eventId = UUID.randomUUID();
         customerId = UUID.randomUUID();
         subscriptionId = UUID.randomUUID();
+        when(billingProperties.resolveMonthlyFee(any())).thenReturn(new BigDecimal("149.90"));
     }
 
     private SubscriptionActivatedEvent subscriptionActivatedEvent() {

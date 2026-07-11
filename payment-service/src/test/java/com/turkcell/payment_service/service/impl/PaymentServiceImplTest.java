@@ -8,6 +8,7 @@ import com.turkcell.payment_service.event.OrderCreatedEvent;
 import com.turkcell.payment_service.event.OrderCreatedItemEvent;
 import com.turkcell.payment_service.event.PaymentCompletedEvent;
 import com.turkcell.payment_service.event.PaymentFailedEvent;
+import com.turkcell.payment_service.config.PaymentRetryProperties;
 import com.turkcell.payment_service.gateway.PaymentGateway;
 import com.turkcell.payment_service.kafka.entity.ProcessedEvent;
 import com.turkcell.payment_service.kafka.repository.ProcessedEventRepository;
@@ -15,6 +16,7 @@ import com.turkcell.payment_service.outbox.service.OutboxEventWriter;
 import com.turkcell.payment_service.repository.PaymentAttemptRepository;
 import com.turkcell.payment_service.repository.PaymentRepository;
 import com.turkcell.payment_service.service.AuditLogService;
+import com.turkcell.payment_service.service.WalletService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -60,6 +62,12 @@ class PaymentServiceImplTest {
     @Mock
     private PaymentGateway paymentGateway;
 
+    @Mock
+    private WalletService walletService;
+
+    @Mock
+    private PaymentRetryProperties paymentRetryProperties;
+
     @InjectMocks
     private PaymentServiceImpl paymentService;
 
@@ -75,6 +83,8 @@ class PaymentServiceImplTest {
         eventId = UUID.randomUUID();
         orderId = UUID.randomUUID();
         customerId = UUID.randomUUID();
+        when(paymentRetryProperties.getDelayHours()).thenReturn(List.of(24, 72, 168));
+        when(paymentRetryProperties.isUseMinutesForDev()).thenReturn(true);
     }
 
     private OrderCreatedEvent orderCreatedEvent() {
@@ -180,19 +190,18 @@ class PaymentServiceImplTest {
     }
 
     @Test
-    void processPayment_shouldFailAndWriteFailedOutbox_onThirdFailedAttempt() {
+    void processPayment_shouldScheduleRetry_whenInvoicePaymentFails() {
         UUID paymentId = UUID.randomUUID();
         Payment payment = pendingInvoicePayment(paymentId);
         when(paymentRepository.findById(paymentId)).thenReturn(Optional.of(payment));
         when(paymentRepository.save(any(Payment.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(paymentAttemptRepository.countByPaymentId(paymentId)).thenReturn(2);
+        when(paymentAttemptRepository.countByPaymentId(paymentId)).thenReturn(0);
         when(paymentGateway.charge(anyString(), any(BigDecimal.class))).thenReturn(false);
 
         PaymentResponse response = paymentService.processPayment(paymentId);
 
-        assertThat(response.status()).isEqualTo("FAILED");
-        verify(outboxEventWriter).write(any(), eq("Payment"), eq("PaymentFailed"), any());
-        verify(auditLogService).logPaymentAction(any(), eq("PAYMENT_FAILED"), anyString());
+        assertThat(response.status()).isEqualTo("RETRY_PENDING");
+        verify(outboxEventWriter, never()).write(any(), eq("Payment"), eq("PaymentFailed"), any());
     }
 
     @Test
@@ -216,7 +225,7 @@ class PaymentServiceImplTest {
 
         CreatePaymentRequest request = new CreatePaymentRequest(invoiceId, new BigDecimal("100.00"), "CREDIT_CARD");
 
-        assertThatThrownBy(() -> paymentService.createPayment(request))
+        assertThatThrownBy(() -> paymentService.createPayment(request, null))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("already exists");
         verify(paymentRepository, never()).save(any());

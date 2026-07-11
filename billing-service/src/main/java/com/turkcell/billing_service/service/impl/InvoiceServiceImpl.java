@@ -4,11 +4,15 @@ import com.turkcell.billing_service.domain.entity.Invoice;
 import com.turkcell.billing_service.dto.request.CreateInvoiceRequest;
 import com.turkcell.billing_service.dto.response.InvoiceLineResponse;
 import com.turkcell.billing_service.dto.response.InvoiceResponse;
+import com.turkcell.billing_service.event.InvoiceOverdueEvent;
+import com.turkcell.billing_service.event.InvoicePaidEvent;
 import com.turkcell.billing_service.event.PaymentCompletedEvent;
 import com.turkcell.billing_service.kafka.entity.ProcessedEvent;
 import com.turkcell.billing_service.kafka.repository.ProcessedEventRepository;
+import com.turkcell.billing_service.outbox.service.OutboxEventWriter;
 import com.turkcell.billing_service.repository.InvoiceLineRepository;
 import com.turkcell.billing_service.repository.InvoiceRepository;
+import com.turkcell.billing_service.service.InvoicePdfService;
 import com.turkcell.billing_service.service.InvoiceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,9 +29,14 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class InvoiceServiceImpl implements InvoiceService {
 
+    private static final String INVOICE_PAID_EVENT = "InvoicePaid";
+    private static final String INVOICE_OVERDUE_EVENT = "InvoiceOverdue";
+
     private final InvoiceRepository invoiceRepository;
     private final InvoiceLineRepository invoiceLineRepository;
     private final ProcessedEventRepository processedEventRepository;
+    private final OutboxEventWriter outboxEventWriter;
+    private final InvoicePdfService invoicePdfService;
 
     @Override
     public InvoiceResponse create(CreateInvoiceRequest request) {
@@ -103,10 +112,12 @@ public class InvoiceServiceImpl implements InvoiceService {
                         if ("COMPLETED".equals(event.status())) {
                             invoice.setStatus("PAID");
                             invoiceRepository.save(invoice);
+                            publishInvoicePaid(invoice, event.amount());
                             log.info("Invoice {} marked as PAID", event.invoiceId());
                         } else if ("FAILED".equals(event.status())) {
                             invoice.setStatus("OVERDUE");
                             invoiceRepository.save(invoice);
+                            publishInvoiceOverdue(invoice);
                             log.info("Invoice {} marked as OVERDUE", event.invoiceId());
                         }
                     },
@@ -117,6 +128,41 @@ public class InvoiceServiceImpl implements InvoiceService {
         if (event.eventId() != null) {
             processedEventRepository.save(new ProcessedEvent(event.eventId(), "PaymentCompleted"));
         }
+    }
+
+    @Override
+    public byte[] generatePdf(UUID invoiceId) {
+        Invoice invoice = invoiceRepository.findById(invoiceId)
+                .orElseThrow(() -> new RuntimeException("Invoice not found: " + invoiceId));
+        var lines = invoiceLineRepository.findByInvoiceId(invoiceId);
+        return invoicePdfService.generate(invoice, lines);
+    }
+
+    private void publishInvoicePaid(Invoice invoice, java.math.BigDecimal amountPaid) {
+        java.math.BigDecimal paid = amountPaid != null ? amountPaid : invoice.getGrandTotal();
+        InvoicePaidEvent event = new InvoicePaidEvent(
+                UUID.randomUUID(),
+                INVOICE_PAID_EVENT,
+                invoice.getId(),
+                invoice.getCustomerId(),
+                invoice.getSubscriptionId(),
+                paid,
+                java.time.LocalDate.now()
+        );
+        outboxEventWriter.write(invoice.getId(), "Invoice", INVOICE_PAID_EVENT, event);
+    }
+
+    private void publishInvoiceOverdue(Invoice invoice) {
+        InvoiceOverdueEvent event = new InvoiceOverdueEvent(
+                UUID.randomUUID(),
+                INVOICE_OVERDUE_EVENT,
+                invoice.getId(),
+                invoice.getCustomerId(),
+                invoice.getSubscriptionId(),
+                invoice.getGrandTotal(),
+                invoice.getDueDate()
+        );
+        outboxEventWriter.write(invoice.getId(), "Invoice", INVOICE_OVERDUE_EVENT, event);
     }
 
     private InvoiceResponse toResponse(Invoice invoice) {

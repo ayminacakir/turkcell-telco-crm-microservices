@@ -21,7 +21,9 @@ import java.util.concurrent.ExecutionException;
 public class OutboxPublisherService {
 
     private static final Map<String, String> TOPICS_BY_EVENT_TYPE = Map.of(
-            "InvoiceGenerated", "invoice.generated"
+            "InvoiceGenerated", "invoice.generated",
+            "InvoicePaid", "invoice.paid",
+            "InvoiceOverdue", "invoice.overdue"
     );
 
     private final OutboxEventRepository outboxEventRepository;

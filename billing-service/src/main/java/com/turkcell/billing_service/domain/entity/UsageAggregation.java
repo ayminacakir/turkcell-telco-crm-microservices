@@ -1,12 +1,13 @@
-package com.turkcell.usage_service.domain.entity;
+package com.turkcell.billing_service.domain.entity;
 
 import jakarta.persistence.*;
+
 import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
-@Table(name = "quotas", schema = "usage_service")
-public class Quota {
+@Table(name = "usage_aggregations", schema = "billing_service")
+public class UsageAggregation {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -24,24 +25,6 @@ public class Quota {
 
     @Column(name = "period_end", nullable = false)
     private LocalDate periodEnd;
-
-    @Column(name = "minutes_total", nullable = false)
-    private Integer minutesTotal;
-
-    @Column(name = "sms_total", nullable = false)
-    private Integer smsTotal;
-
-    @Column(name = "mb_total", nullable = false)
-    private Integer mbTotal;
-
-    @Column(name = "minutes_remaining", nullable = false)
-    private Integer minutesRemaining;
-
-    @Column(name = "sms_remaining", nullable = false)
-    private Integer smsRemaining;
-
-    @Column(name = "mb_remaining", nullable = false)
-    private Integer mbRemaining;
 
     @Column(name = "voice_used", nullable = false)
     private Integer voiceUsed = 0;
@@ -61,10 +44,7 @@ public class Quota {
     @Column(name = "overage_data_mb", nullable = false)
     private Integer overageDataMb = 0;
 
-    public Quota() {}
-
     public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
 
     public UUID getSubscriptionId() { return subscriptionId; }
     public void setSubscriptionId(UUID subscriptionId) { this.subscriptionId = subscriptionId; }
@@ -77,24 +57,6 @@ public class Quota {
 
     public LocalDate getPeriodEnd() { return periodEnd; }
     public void setPeriodEnd(LocalDate periodEnd) { this.periodEnd = periodEnd; }
-
-    public Integer getMinutesTotal() { return minutesTotal; }
-    public void setMinutesTotal(Integer minutesTotal) { this.minutesTotal = minutesTotal; }
-
-    public Integer getSmsTotal() { return smsTotal; }
-    public void setSmsTotal(Integer smsTotal) { this.smsTotal = smsTotal; }
-
-    public Integer getMbTotal() { return mbTotal; }
-    public void setMbTotal(Integer mbTotal) { this.mbTotal = mbTotal; }
-
-    public Integer getMinutesRemaining() { return minutesRemaining; }
-    public void setMinutesRemaining(Integer minutesRemaining) { this.minutesRemaining = minutesRemaining; }
-
-    public Integer getSmsRemaining() { return smsRemaining; }
-    public void setSmsRemaining(Integer smsRemaining) { this.smsRemaining = smsRemaining; }
-
-    public Integer getMbRemaining() { return mbRemaining; }
-    public void setMbRemaining(Integer mbRemaining) { this.mbRemaining = mbRemaining; }
 
     public Integer getVoiceUsed() { return voiceUsed; }
     public void setVoiceUsed(Integer voiceUsed) { this.voiceUsed = voiceUsed; }

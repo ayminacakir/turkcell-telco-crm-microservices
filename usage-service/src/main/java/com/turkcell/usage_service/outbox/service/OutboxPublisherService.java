@@ -22,7 +22,8 @@ public class OutboxPublisherService {
 
     private static final Map<String, String> TOPICS_BY_EVENT_TYPE = Map.of(
             "QuotaThresholdReached", "quota.threshold.reached",
-            "QuotaExceeded", "quota.exceeded"
+            "QuotaExceeded", "quota.exceeded",
+            "UsageAggregated", "usage.aggregated"
     );
 
     private final OutboxEventRepository outboxEventRepository;

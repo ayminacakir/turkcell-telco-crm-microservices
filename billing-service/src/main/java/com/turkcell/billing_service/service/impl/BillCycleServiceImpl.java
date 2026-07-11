@@ -1,5 +1,6 @@
 package com.turkcell.billing_service.service.impl;
 
+import com.turkcell.billing_service.config.BillingProperties;
 import com.turkcell.billing_service.domain.entity.BillCycle;
 import com.turkcell.billing_service.dto.request.CreateBillCycleRequest;
 import com.turkcell.billing_service.dto.response.BillCycleResponse;
@@ -25,6 +26,7 @@ public class BillCycleServiceImpl implements BillCycleService {
 
     private final BillCycleRepository billCycleRepository;
     private final ProcessedEventRepository processedEventRepository;
+    private final BillingProperties billingProperties;
 
     @Override
     public BillCycleResponse create(CreateBillCycleRequest request) {
@@ -72,6 +74,8 @@ public class BillCycleServiceImpl implements BillCycleService {
             BillCycle billCycle = new BillCycle();
             billCycle.setCustomerId(event.customerId());
             billCycle.setSubscriptionId(event.subscriptionId());
+            billCycle.setTariffCode(event.tariffCode());
+            billCycle.setMonthlyFee(billingProperties.resolveMonthlyFee(event.tariffCode()));
             billCycle.setDayOfMonth(dayOfMonth);
             billCycle.setNextRunDate(nextRunDate);
             billCycleRepository.save(billCycle);

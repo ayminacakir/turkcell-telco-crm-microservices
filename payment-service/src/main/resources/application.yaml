@@ -28,3 +28,9 @@ spring:
 payment:
   gateway:
     success-rate: 0.8
+  retry:
+    delay-hours:
+      - 24
+      - 72
+      - 168
+    use-minutes-for-dev: true

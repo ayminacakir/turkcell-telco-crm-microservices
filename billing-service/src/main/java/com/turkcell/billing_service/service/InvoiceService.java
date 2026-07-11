@@ -16,4 +16,5 @@ public interface InvoiceService {
     InvoiceResponse updateStatus(UUID id, String status);
     List<InvoiceLineResponse> getLinesByInvoiceId(UUID invoiceId);
     void handlePaymentCompleted(PaymentCompletedEvent event);
+    byte[] generatePdf(UUID invoiceId);
 }
