@@ -1,0 +1,19 @@
+package com.turkcell.billing_service.event;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+public record InvoiceGeneratedEvent(
+        UUID eventId,
+        String eventType,
+        UUID invoiceId,
+        UUID customerId,
+        UUID subscriptionId,
+        LocalDate periodStart,
+        LocalDate periodEnd,
+        BigDecimal grandTotal,
+        LocalDate dueDate,
+        LocalDateTime issuedAt
+) {}

@@ -8,3 +8,29 @@ spring:
     active: dev
   config:
     import: optional:configserver:http://localhost:8888
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      group-id: billing-service-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 0
+    default-schema: billing_service
+    schemas: billing_service
+
+billing:
+  default-monthly-fee: 149.90
+  tax-rate: 0.20
+  tariffs:
+    TARIFF-BASIC: 149.90
+  overage:
+    voice-per-minute: 0.50
+    sms-per-unit: 0.25
+    data-per-mb: 0.10

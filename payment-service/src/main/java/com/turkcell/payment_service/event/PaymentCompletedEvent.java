@@ -16,6 +16,7 @@ public class PaymentCompletedEvent {
     private String eventType;
     private UUID paymentId;
     private UUID orderId;
+    private UUID invoiceId;
     private UUID customerId;
     private BigDecimal amount;
     private String currency;

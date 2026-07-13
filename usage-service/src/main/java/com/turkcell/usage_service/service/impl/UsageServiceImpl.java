@@ -7,13 +7,15 @@ import com.turkcell.usage_service.dto.request.CreateUsageRecordRequest;
 import com.turkcell.usage_service.dto.response.QuotaResponse;
 import com.turkcell.usage_service.dto.response.UsageRecordResponse;
 import com.turkcell.usage_service.event.QuotaThresholdEvent;
-import com.turkcell.usage_service.kafka.UsageKafkaProducer;
+import com.turkcell.usage_service.event.UsageAggregatedEvent;
+import com.turkcell.usage_service.outbox.service.OutboxEventWriter;
 import com.turkcell.usage_service.repository.QuotaRepository;
 import com.turkcell.usage_service.repository.UsageRecordRepository;
 import com.turkcell.usage_service.service.UsageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -26,11 +28,17 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UsageServiceImpl implements UsageService {
 
+    private static final String QUOTA_AGGREGATE_TYPE = "Quota";
+    private static final String QUOTA_THRESHOLD_REACHED_EVENT = "QuotaThresholdReached";
+    private static final String QUOTA_EXCEEDED_EVENT = "QuotaExceeded";
+    private static final String USAGE_AGGREGATED_EVENT = "UsageAggregated";
+
     private final UsageRecordRepository usageRecordRepository;
     private final QuotaRepository quotaRepository;
-    private final UsageKafkaProducer kafkaProducer;
+    private final OutboxEventWriter outboxEventWriter;
 
     @Override
+    @Transactional
     public UsageRecordResponse recordUsage(CreateUsageRecordRequest request) {
         // Kullanım kaydı oluştur
         UsageRecord record = new UsageRecord();
@@ -84,35 +92,84 @@ public class UsageServiceImpl implements UsageService {
         return toQuotaResponse(quotaRepository.save(quota));
     }
 
-    // FR-19: %80 ve %100 eşik kontrolü
+    // FR-19: %80 ve %100 eşik kontrolü + FR-20: aşım billing'e UsageAggregated ile gider
     private void updateQuotaAndCheckThreshold(Quota quota,
                                                UsageRecord.UsageType type, int used) {
-        int before, after, total;
+        int beforeRemaining;
+        int totalIncluded;
+        int beforeOverage;
 
         switch (type) {
             case VOICE -> {
-                before = quota.getMinutesRemaining();
-                after = Math.max(0, before - used);
-                quota.setMinutesRemaining(after);
-                total = before + used; // yaklaşık toplam
-                checkAndPublishThreshold(quota.getSubscriptionId(), "VOICE", before, after, total);
+                beforeRemaining = quota.getMinutesRemaining();
+                totalIncluded = quota.getMinutesTotal() != null ? quota.getMinutesTotal() : beforeRemaining + used;
+                beforeOverage = quota.getOverageVoiceMinutes();
+                quota.setVoiceUsed(quota.getVoiceUsed() + used);
+                if (used <= beforeRemaining) {
+                    quota.setMinutesRemaining(beforeRemaining - used);
+                } else {
+                    quota.setMinutesRemaining(0);
+                    quota.setOverageVoiceMinutes(beforeOverage + (used - beforeRemaining));
+                }
+                checkAndPublishThreshold(quota.getSubscriptionId(), "VOICE",
+                        beforeRemaining, quota.getMinutesRemaining(), totalIncluded);
+                publishUsageAggregatedIfOverage(quota, beforeOverage, quota.getOverageVoiceMinutes());
             }
             case SMS -> {
-                before = quota.getSmsRemaining();
-                after = Math.max(0, before - used);
-                quota.setSmsRemaining(after);
-                total = before + used;
-                checkAndPublishThreshold(quota.getSubscriptionId(), "SMS", before, after, total);
+                beforeRemaining = quota.getSmsRemaining();
+                totalIncluded = quota.getSmsTotal() != null ? quota.getSmsTotal() : beforeRemaining + used;
+                beforeOverage = quota.getOverageSms();
+                quota.setSmsUsed(quota.getSmsUsed() + used);
+                if (used <= beforeRemaining) {
+                    quota.setSmsRemaining(beforeRemaining - used);
+                } else {
+                    quota.setSmsRemaining(0);
+                    quota.setOverageSms(beforeOverage + (used - beforeRemaining));
+                }
+                checkAndPublishThreshold(quota.getSubscriptionId(), "SMS",
+                        beforeRemaining, quota.getSmsRemaining(), totalIncluded);
+                publishUsageAggregatedIfOverage(quota, beforeOverage, quota.getOverageSms());
             }
             case DATA -> {
-                before = quota.getMbRemaining();
-                after = Math.max(0, before - used);
-                quota.setMbRemaining(after);
-                total = before + used;
-                checkAndPublishThreshold(quota.getSubscriptionId(), "DATA", before, after, total);
+                beforeRemaining = quota.getMbRemaining();
+                totalIncluded = quota.getMbTotal() != null ? quota.getMbTotal() : beforeRemaining + used;
+                beforeOverage = quota.getOverageDataMb();
+                quota.setDataMbUsed(quota.getDataMbUsed() + used);
+                if (used <= beforeRemaining) {
+                    quota.setMbRemaining(beforeRemaining - used);
+                } else {
+                    quota.setMbRemaining(0);
+                    quota.setOverageDataMb(beforeOverage + (used - beforeRemaining));
+                }
+                checkAndPublishThreshold(quota.getSubscriptionId(), "DATA",
+                        beforeRemaining, quota.getMbRemaining(), totalIncluded);
+                publishUsageAggregatedIfOverage(quota, beforeOverage, quota.getOverageDataMb());
             }
         }
         quotaRepository.save(quota);
+    }
+
+    private void publishUsageAggregatedIfOverage(Quota quota, int beforeOverage, int afterOverage) {
+        if (afterOverage <= beforeOverage) {
+            return;
+        }
+
+        UsageAggregatedEvent event = new UsageAggregatedEvent(
+                UUID.randomUUID(),
+                USAGE_AGGREGATED_EVENT,
+                quota.getSubscriptionId(),
+                quota.getCustomerId(),
+                quota.getPeriodStart(),
+                quota.getPeriodEnd(),
+                quota.getVoiceUsed(),
+                quota.getSmsUsed(),
+                quota.getDataMbUsed(),
+                quota.getOverageVoiceMinutes(),
+                quota.getOverageSms(),
+                quota.getOverageDataMb()
+        );
+        outboxEventWriter.write(quota.getSubscriptionId(), QUOTA_AGGREGATE_TYPE, USAGE_AGGREGATED_EVENT, event);
+        log.info("UsageAggregated published for subscriptionId={}", quota.getSubscriptionId());
     }
 
     private void checkAndPublishThreshold(UUID subscriptionId, String type,
@@ -124,14 +181,16 @@ public class UsageServiceImpl implements UsageService {
 
         // %100 aşıldı mı?
         if (after == 0 && before > 0) {
-            kafkaProducer.publishQuotaExceeded(
-                new QuotaThresholdEvent(subscriptionId, type, "PERCENT_100", 0));
+            QuotaThresholdEvent event = new QuotaThresholdEvent(
+                    UUID.randomUUID(), QUOTA_EXCEEDED_EVENT, subscriptionId, type, "PERCENT_100", 0);
+            outboxEventWriter.write(subscriptionId, QUOTA_AGGREGATE_TYPE, QUOTA_EXCEEDED_EVENT, event);
             log.warn("Quota EXCEEDED for subscription: {} type: {}", subscriptionId, type);
         }
         // %80 geçildi mi? (önceden geçilmemişse)
         else if (usedPercent >= 80 && beforePercent < 80) {
-            kafkaProducer.publishThresholdReached(
-                new QuotaThresholdEvent(subscriptionId, type, "PERCENT_80", after));
+            QuotaThresholdEvent event = new QuotaThresholdEvent(
+                    UUID.randomUUID(), QUOTA_THRESHOLD_REACHED_EVENT, subscriptionId, type, "PERCENT_80", after);
+            outboxEventWriter.write(subscriptionId, QUOTA_AGGREGATE_TYPE, QUOTA_THRESHOLD_REACHED_EVENT, event);
             log.info("Quota 80% reached for subscription: {} type: {}", subscriptionId, type);
         }
     }
