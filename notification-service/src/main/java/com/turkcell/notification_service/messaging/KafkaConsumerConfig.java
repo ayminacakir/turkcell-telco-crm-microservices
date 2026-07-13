@@ -3,6 +3,9 @@ package com.turkcell.notification_service.messaging;
 import com.turkcell.notification_service.event.PaymentCompletedEvent;
 import com.turkcell.notification_service.event.PaymentFailedEvent;
 import com.turkcell.notification_service.event.QuotaThresholdReachedEvent;
+import com.turkcell.notification_service.event.SubscriptionActivatedEvent;
+import com.turkcell.notification_service.event.InvoiceGeneratedEvent;
+import com.turkcell.notification_service.event.CustomerRegisteredEvent;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.beans.factory.annotation.Value;
@@ -67,5 +70,20 @@ public class KafkaConsumerConfig {
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, QuotaThresholdReachedEvent> quotaEventContainerFactory() {
         return factoryFor(QuotaThresholdReachedEvent.class);
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, SubscriptionActivatedEvent> subscriptionActivatedContainerFactory() {
+        return factoryFor(SubscriptionActivatedEvent.class);
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, InvoiceGeneratedEvent> invoiceGeneratedContainerFactory() {
+        return factoryFor(InvoiceGeneratedEvent.class);
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, CustomerRegisteredEvent> customerRegisteredContainerFactory() {
+        return factoryFor(CustomerRegisteredEvent.class);
     }
 }

@@ -10,6 +10,7 @@ import com.turkcell.notification_service.exception.ResourceNotFoundException;
 import com.turkcell.notification_service.repository.NotificationRepository;
 import com.turkcell.notification_service.repository.NotificationTemplateRepository;
 import com.turkcell.notification_service.service.impl.NotificationServiceImpl;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,7 +40,7 @@ class NotificationServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        notificationService = new NotificationServiceImpl(notificationRepository, templateRepository);
+        notificationService = new NotificationServiceImpl(notificationRepository, templateRepository, new ObjectMapper());
     }
 
     @Test

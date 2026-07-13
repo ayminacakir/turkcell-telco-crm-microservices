@@ -32,10 +32,11 @@ public class NotificationServiceImpl implements NotificationService {
     private final ObjectMapper objectMapper;
 
     public NotificationServiceImpl(NotificationRepository notificationRepository,
-                                    NotificationTemplateRepository templateRepository) {
+                                    NotificationTemplateRepository templateRepository,
+                                    ObjectMapper objectMapper) {
         this.notificationRepository = notificationRepository;
         this.templateRepository = templateRepository;
-        this.objectMapper = new ObjectMapper();
+        this.objectMapper = objectMapper;
     }
 
     @Override

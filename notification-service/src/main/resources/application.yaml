@@ -8,3 +8,11 @@ spring:
     active: dev
   config:
     import: optional:configserver:http://localhost:8888
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+    schemas: notification_service
+    default-schema: notification_service
+    baseline-on-migrate: true
