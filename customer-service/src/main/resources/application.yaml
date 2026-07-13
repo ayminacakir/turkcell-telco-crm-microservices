@@ -1,6 +1,10 @@
 server:
     port: 9002
 
+app:
+    security:
+        pii-encryption-key: w1gBKCjM1rwjpgZIgtakU19gqQU4h7RIG4309dzu5vw=
+
 spring:
     application:
         name: customer-service
