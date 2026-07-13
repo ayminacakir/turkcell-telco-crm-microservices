@@ -34,6 +34,7 @@ class CustomerServiceTest {
     @Mock private DocumentRepository documentRepository;
     @Mock private ContactInfoRepository contactInfoRepository;
     @Mock private OutboxEventRepository outboxEventRepository;
+    @Mock private AuditLogService auditLogService;
 
     private CustomerService customerService;
 
@@ -45,7 +46,8 @@ class CustomerServiceTest {
                 documentRepository,
                 contactInfoRepository,
                 outboxEventRepository,
-                new ObjectMapper().findAndRegisterModules());
+                new ObjectMapper().findAndRegisterModules(),
+                auditLogService);
     }
 
     @Test

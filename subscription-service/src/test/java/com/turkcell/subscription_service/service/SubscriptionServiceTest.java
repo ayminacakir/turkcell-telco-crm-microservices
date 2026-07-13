@@ -40,6 +40,8 @@ class SubscriptionServiceTest {
     private OutboxEventRepository outboxEventRepository;
     @Mock
     private ProcessedEventRepository processedEventRepository;
+    @Mock
+    private AuditLogService auditLogService;
 
     private SubscriptionService subscriptionService;
 
@@ -51,7 +53,8 @@ class SubscriptionServiceTest {
                 simCardRepository,
                 outboxEventRepository,
                 processedEventRepository,
-                new ObjectMapper().findAndRegisterModules());
+                new ObjectMapper().findAndRegisterModules(),
+                auditLogService);
     }
 
     @Test

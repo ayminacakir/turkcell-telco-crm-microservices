@@ -45,6 +45,7 @@ public class CustomerService {
     private final ContactInfoRepository contactInfoRepository;
     private final OutboxEventRepository outboxEventRepository;
     private final ObjectMapper objectMapper;
+    private final AuditLogService auditLogService;
 
     public CustomerService(
             CustomerRepository customerRepository,
@@ -52,13 +53,15 @@ public class CustomerService {
             DocumentRepository documentRepository,
             ContactInfoRepository contactInfoRepository,
             OutboxEventRepository outboxEventRepository,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            AuditLogService auditLogService) {
         this.customerRepository = customerRepository;
         this.addressRepository = addressRepository;
         this.documentRepository = documentRepository;
         this.contactInfoRepository = contactInfoRepository;
         this.outboxEventRepository = outboxEventRepository;
         this.objectMapper = objectMapper;
+        this.auditLogService = auditLogService;
     }
 
     @Transactional
@@ -87,6 +90,9 @@ public class CustomerService {
                         savedCustomer.getCompanyName(), savedCustomer.getIdentityNumber(),
                         LocalDateTime.now()));
 
+        auditLogService.logCustomerAction(savedCustomer.getId(), "CUSTOMER_CREATED",
+                "type=" + savedCustomer.getType() + " identityNumber=" + savedCustomer.getIdentityNumber());
+
         return toResponse(savedCustomer);
     }
 
@@ -112,6 +118,9 @@ public class CustomerService {
                         saved.getId(), saved.getFirstName(), saved.getLastName(),
                         saved.getCompanyName(), LocalDateTime.now()));
 
+        auditLogService.logCustomerAction(saved.getId(), "CUSTOMER_UPDATED",
+                "firstName=" + saved.getFirstName() + " lastName=" + saved.getLastName());
+
         return toResponse(saved);
     }
 
@@ -124,6 +133,8 @@ public class CustomerService {
         customer.setDeletedAt(LocalDateTime.now());
 
         customerRepository.save(customer);
+
+        auditLogService.logCustomerAction(customer.getId(), "CUSTOMER_DELETED", null);
     }
 
     @Transactional
@@ -138,6 +149,8 @@ public class CustomerService {
                 new CustomerKYCApprovedEvent(
                         UUID.randomUUID(), "CustomerKYCApproved",
                         saved.getId(), LocalDateTime.now()));
+
+        auditLogService.logCustomerAction(saved.getId(), "CUSTOMER_KYC_APPROVED", null);
 
         return toResponse(saved);
     }
@@ -154,6 +167,8 @@ public class CustomerService {
                 new CustomerKYCRejectedEvent(
                         UUID.randomUUID(), "CustomerKYCRejected",
                         saved.getId(), LocalDateTime.now()));
+
+        auditLogService.logCustomerAction(saved.getId(), "CUSTOMER_KYC_REJECTED", null);
 
         return toResponse(saved);
     }
