@@ -24,6 +24,7 @@ import com.turkcell.customer_service.dto.response.AddressResponse;
 import com.turkcell.customer_service.dto.response.ContactInfoResponse;
 import com.turkcell.customer_service.dto.response.DocumentResponse;
 import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.http.HttpStatus;
 
@@ -61,11 +62,13 @@ public class CustomerController {
         customerService.softDelete(id);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/{id}/kyc/approve")
     public CustomerResponse approveKyc(@PathVariable UUID id) {
         return customerService.approveKyc(id);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/{id}/kyc/reject")
     public CustomerResponse rejectKyc(@PathVariable UUID id) {
         return customerService.rejectKyc(id);
