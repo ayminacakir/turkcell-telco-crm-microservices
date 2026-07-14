@@ -9,6 +9,8 @@ import com.turkcell.ticket_service.dto.TicketStatusUpdateRequest;
 import com.turkcell.ticket_service.exception.InvalidStatusTransitionException;
 import com.turkcell.ticket_service.exception.ResourceNotFoundException;
 import com.turkcell.ticket_service.repository.TicketCommentRepository;
+import com.turkcell.ticket_service.outbox.repository.OutboxEventRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.turkcell.ticket_service.repository.TicketRepository;
 import com.turkcell.ticket_service.service.impl.TicketServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,6 +39,12 @@ class TicketServiceImplTest {
 
     @Mock
     private TicketCommentRepository ticketCommentRepository;
+
+    @Mock
+    private OutboxEventRepository outboxEventRepository;
+
+    @Mock
+    private ObjectMapper objectMapper;
 
     @InjectMocks
     private TicketServiceImpl ticketService;

@@ -32,6 +32,13 @@ public class TariffController {
         return ResponseEntity.ok(tariffService.getByCode(code));
     }
 
+    @PatchMapping("/{code}/price")
+    public ResponseEntity<TariffResponse> updatePrice(
+            @PathVariable String code,
+            @RequestBody java.math.BigDecimal newMonthlyFee) {
+        return ResponseEntity.ok(tariffService.updatePrice(code, newMonthlyFee));
+    }
+
     @GetMapping
     public ResponseEntity<List<TariffResponse>> getAll(
             @RequestParam(name = "status", required = false) String status) {

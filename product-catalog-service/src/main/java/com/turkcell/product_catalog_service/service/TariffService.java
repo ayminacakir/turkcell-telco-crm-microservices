@@ -14,4 +14,6 @@ public interface TariffService {
     List<TariffResponse> getAll();
 
     List<TariffResponse> getActive();
+
+    TariffResponse updatePrice(String code, java.math.BigDecimal newMonthlyFee);
 }

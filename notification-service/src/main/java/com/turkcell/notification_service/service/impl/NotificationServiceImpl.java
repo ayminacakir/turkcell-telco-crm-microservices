@@ -8,6 +8,10 @@ import com.turkcell.notification_service.domain.enums.NotificationStatus;
 import com.turkcell.notification_service.dto.NotificationResponse;
 import com.turkcell.notification_service.dto.SendNotificationRequest;
 import com.turkcell.notification_service.exception.ResourceNotFoundException;
+import com.turkcell.notification_service.outbox.entity.OutboxEvent;
+import com.turkcell.notification_service.outbox.enums.OutboxStatus;
+import com.turkcell.notification_service.outbox.event.NotificationDispatchedEvent;
+import com.turkcell.notification_service.outbox.repository.OutboxEventRepository;
 import com.turkcell.notification_service.repository.NotificationRepository;
 import com.turkcell.notification_service.repository.NotificationTemplateRepository;
 import com.turkcell.notification_service.service.NotificationService;
@@ -30,13 +34,16 @@ public class NotificationServiceImpl implements NotificationService {
     private final NotificationRepository notificationRepository;
     private final NotificationTemplateRepository templateRepository;
     private final ObjectMapper objectMapper;
+    private final OutboxEventRepository outboxEventRepository;
 
     public NotificationServiceImpl(NotificationRepository notificationRepository,
                                     NotificationTemplateRepository templateRepository,
-                                    ObjectMapper objectMapper) {
+                                    ObjectMapper objectMapper,
+                                    OutboxEventRepository outboxEventRepository) {
         this.notificationRepository = notificationRepository;
         this.templateRepository = templateRepository;
         this.objectMapper = objectMapper;
+        this.outboxEventRepository = outboxEventRepository;
     }
 
     @Override
@@ -61,7 +68,15 @@ public class NotificationServiceImpl implements NotificationService {
         notification.setStatus(NotificationStatus.SENT);
         notification.setSentAt(LocalDateTime.now());
 
-        return toResponse(notificationRepository.save(notification));
+        Notification saved = notificationRepository.save(notification);
+
+        saveOutboxEvent(saved.getId(), "NotificationDispatched",
+                new NotificationDispatchedEvent(
+                        UUID.randomUUID(), "NotificationDispatched",
+                        saved.getId(), saved.getUserId(), saved.getTemplateCode(),
+                        saved.getChannel(), LocalDateTime.now()));
+
+        return toResponse(saved);
     }
 
     @Override
@@ -96,6 +111,23 @@ public class NotificationServiceImpl implements NotificationService {
             log.warn("Placeholders JSON'a çevrilemedi, boş obje kaydediliyor", e);
             return "{}";
         }
+    }
+
+    private void saveOutboxEvent(UUID aggregateId, String eventType, Object payload) {
+        String json;
+        try {
+            json = objectMapper.writeValueAsString(payload);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Could not serialize " + eventType + " event", e);
+        }
+
+        OutboxEvent outboxEvent = new OutboxEvent();
+        outboxEvent.setAggregateId(aggregateId);
+        outboxEvent.setAggregateType("NOTIFICATION");
+        outboxEvent.setEventType(eventType);
+        outboxEvent.setPayload(json);
+        outboxEvent.setStatus(OutboxStatus.PENDING);
+        outboxEventRepository.save(outboxEvent);
     }
 
     private NotificationResponse toResponse(Notification n) {
