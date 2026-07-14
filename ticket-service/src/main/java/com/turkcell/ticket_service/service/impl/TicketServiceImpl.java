@@ -1,5 +1,7 @@
 package com.turkcell.ticket_service.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.turkcell.ticket_service.domain.entity.Ticket;
 import com.turkcell.ticket_service.domain.entity.TicketComment;
 import com.turkcell.ticket_service.domain.enums.TicketPriority;
@@ -7,9 +9,17 @@ import com.turkcell.ticket_service.domain.enums.TicketStatus;
 import com.turkcell.ticket_service.dto.*;
 import com.turkcell.ticket_service.exception.InvalidStatusTransitionException;
 import com.turkcell.ticket_service.exception.ResourceNotFoundException;
+import com.turkcell.ticket_service.outbox.entity.OutboxEvent;
+import com.turkcell.ticket_service.outbox.enums.OutboxStatus;
+import com.turkcell.ticket_service.outbox.event.SlaBreachedEvent;
+import com.turkcell.ticket_service.outbox.event.TicketOpenedEvent;
+import com.turkcell.ticket_service.outbox.event.TicketResolvedEvent;
+import com.turkcell.ticket_service.outbox.repository.OutboxEventRepository;
 import com.turkcell.ticket_service.repository.TicketCommentRepository;
 import com.turkcell.ticket_service.repository.TicketRepository;
 import com.turkcell.ticket_service.service.TicketService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +34,8 @@ import java.util.UUID;
 @Service
 @Transactional
 public class TicketServiceImpl implements TicketService {
+
+    private static final Logger log = LoggerFactory.getLogger(TicketServiceImpl.class);
 
     /** Öncelik bazlı SLA süresi (saat). */
     private static final Map<TicketPriority, Long> SLA_HOURS = Map.of(
@@ -45,10 +57,17 @@ public class TicketServiceImpl implements TicketService {
 
     private final TicketRepository ticketRepository;
     private final TicketCommentRepository ticketCommentRepository;
+    private final OutboxEventRepository outboxEventRepository;
+    private final ObjectMapper objectMapper;
 
-    public TicketServiceImpl(TicketRepository ticketRepository, TicketCommentRepository ticketCommentRepository) {
+    public TicketServiceImpl(TicketRepository ticketRepository,
+                              TicketCommentRepository ticketCommentRepository,
+                              OutboxEventRepository outboxEventRepository,
+                              ObjectMapper objectMapper) {
         this.ticketRepository = ticketRepository;
         this.ticketCommentRepository = ticketCommentRepository;
+        this.outboxEventRepository = outboxEventRepository;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -72,6 +91,12 @@ public class TicketServiceImpl implements TicketService {
         initialComment.setBody(request.description());
         initialComment.setCreatedAt(now);
         ticketCommentRepository.save(initialComment);
+
+        saveOutboxEvent(saved.getId(), "TicketOpened",
+                new TicketOpenedEvent(
+                        UUID.randomUUID(), "TicketOpened",
+                        saved.getId(), saved.getCustomerId(), saved.getCategory(),
+                        saved.getPriority(), saved.getSlaDueAt(), now));
 
         return toResponse(saved);
     }
@@ -104,6 +129,14 @@ public class TicketServiceImpl implements TicketService {
         }
 
         ticket.setStatus(target);
+
+        if (target == TicketStatus.RESOLVED) {
+            saveOutboxEvent(ticket.getId(), "TicketResolved",
+                    new TicketResolvedEvent(
+                            UUID.randomUUID(), "TicketResolved",
+                            ticket.getId(), ticket.getCustomerId(), LocalDateTime.now()));
+        }
+
         return toResponse(ticket);
     }
 
@@ -130,9 +163,50 @@ public class TicketServiceImpl implements TicketService {
                 .toList();
     }
 
+    /**
+     * SLA suresi gecmis ve henuz kapatilmamis/cozulmemis biletleri bulur,
+     * her biri icin bir kez SlaBreached event'i yayinlar. OutboxSlaSchedulerService
+     * tarafindan periyodik olarak cagrilir.
+     */
+    public void checkSlaBreaches() {
+        LocalDateTime now = LocalDateTime.now();
+        List<Ticket> breached = ticketRepository.findBySlaDueAtBeforeAndStatusNotInAndSlaBreachNotifiedFalse(
+                now, List.of(TicketStatus.RESOLVED, TicketStatus.CLOSED));
+
+        for (Ticket ticket : breached) {
+            ticket.setSlaBreachNotified(true);
+            ticketRepository.save(ticket);
+
+            saveOutboxEvent(ticket.getId(), "SlaBreached",
+                    new SlaBreachedEvent(
+                            UUID.randomUUID(), "SlaBreached",
+                            ticket.getId(), ticket.getCustomerId(), ticket.getPriority(),
+                            ticket.getSlaDueAt(), now));
+
+            log.info("SLA breached for ticket {}", ticket.getId());
+        }
+    }
+
     private Ticket findEntity(UUID id) {
         return ticketRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found with id: " + id));
+    }
+
+    private void saveOutboxEvent(UUID aggregateId, String eventType, Object payload) {
+        String json;
+        try {
+            json = objectMapper.writeValueAsString(payload);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Could not serialize " + eventType + " event", e);
+        }
+
+        OutboxEvent outboxEvent = new OutboxEvent();
+        outboxEvent.setAggregateId(aggregateId);
+        outboxEvent.setAggregateType("TICKET");
+        outboxEvent.setEventType(eventType);
+        outboxEvent.setPayload(json);
+        outboxEvent.setStatus(OutboxStatus.PENDING);
+        outboxEventRepository.save(outboxEvent);
     }
 
     private TicketResponse toResponse(Ticket t) {

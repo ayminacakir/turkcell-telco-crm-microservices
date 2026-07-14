@@ -9,4 +9,7 @@ import java.util.UUID;
 public interface TicketRepository extends JpaRepository<Ticket, UUID> {
 
     List<Ticket> findByCustomerId(UUID customerId);
+
+    List<Ticket> findBySlaDueAtBeforeAndStatusNotInAndSlaBreachNotifiedFalse(
+            java.time.LocalDateTime now, java.util.List<com.turkcell.ticket_service.domain.enums.TicketStatus> excludedStatuses);
 }
