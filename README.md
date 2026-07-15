@@ -42,6 +42,8 @@ TelcoX CRM, bir GSM operatörünün tüm iş süreçlerini yöneten **mikroservi
 - 📨 **Event-driven** — Servisler arası iletişim Kafka üzerinden planlanmıştır
 - 🏗️ **Multi-module Maven** — Tüm servisler tek repo, ortak parent pom
 
+> 📄 Detaylı analiz ve tasarım dokümanı (fonksiyonel gereksinimler, servis detayları, event akışı, kabul kriterleri) için: [**Proje Gereksinimleri (MVP Analiz ve Tasarım Dokümanı)**](docs/PROJE_GEREKSINIMLERI.md)
+
 ---
 
 ## 🎯 MVP Senaryoları
