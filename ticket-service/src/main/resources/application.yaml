@@ -8,3 +8,11 @@ spring:
     active: dev
   config:
     import: optional:configserver:http://localhost:8888
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+    schemas: ticket_service
+    default-schema: ticket_service
+    baseline-on-migrate: true

@@ -8,6 +8,8 @@ import com.turkcell.product_catalog_service.dto.TariffResponse;
 import com.turkcell.product_catalog_service.exception.DuplicateCodeException;
 import com.turkcell.product_catalog_service.exception.ResourceNotFoundException;
 import com.turkcell.product_catalog_service.repository.TariffRepository;
+import com.turkcell.product_catalog_service.outbox.repository.OutboxEventRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.turkcell.product_catalog_service.service.impl.TariffServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,6 +34,12 @@ class TariffServiceImplTest {
 
     @Mock
     private TariffRepository tariffRepository;
+
+    @Mock
+    private OutboxEventRepository outboxEventRepository;
+
+    @Mock
+    private ObjectMapper objectMapper;
 
     @InjectMocks
     private TariffServiceImpl tariffService;

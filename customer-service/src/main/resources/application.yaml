@@ -8,3 +8,8 @@ spring:
         active: dev
     config:
         import: optional:configserver:http://localhost:8888
+    kafka:
+        bootstrap-servers: localhost:9092
+        producer:
+            key-serializer: org.apache.kafka.common.serialization.StringSerializer
+            value-serializer: org.apache.kafka.common.serialization.StringSerializer

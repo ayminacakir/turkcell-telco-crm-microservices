@@ -1,5 +1,7 @@
 package com.turkcell.customer_service.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.turkcell.customer_service.dto.request.CreateAddressRequest;
 import com.turkcell.customer_service.dto.request.CreateContactInfoRequest;
 import com.turkcell.customer_service.dto.request.CreateCustomerRequest;
@@ -17,6 +19,12 @@ import com.turkcell.customer_service.enums.ContactType;
 import com.turkcell.customer_service.enums.CustomerStatus;
 import com.turkcell.customer_service.enums.CustomerType;
 import com.turkcell.customer_service.excepiton.CustomerNotFoundException;
+import com.turkcell.customer_service.outbox.entity.OutboxEvent;
+import com.turkcell.customer_service.outbox.enums.OutboxStatus;
+import com.turkcell.customer_service.outbox.event.CustomerKYCApprovedEvent;
+import com.turkcell.customer_service.outbox.event.CustomerRegisteredEvent;
+import com.turkcell.customer_service.outbox.event.CustomerUpdatedEvent;
+import com.turkcell.customer_service.outbox.repository.OutboxEventRepository;
 import com.turkcell.customer_service.repository.AddressRepository;
 import com.turkcell.customer_service.repository.ContactInfoRepository;
 import com.turkcell.customer_service.repository.CustomerRepository;
@@ -34,16 +42,22 @@ public class CustomerService {
     private final AddressRepository addressRepository;
     private final DocumentRepository documentRepository;
     private final ContactInfoRepository contactInfoRepository;
+    private final OutboxEventRepository outboxEventRepository;
+    private final ObjectMapper objectMapper;
 
     public CustomerService(
             CustomerRepository customerRepository,
             AddressRepository addressRepository,
             DocumentRepository documentRepository,
-            ContactInfoRepository contactInfoRepository) {
+            ContactInfoRepository contactInfoRepository,
+            OutboxEventRepository outboxEventRepository,
+            ObjectMapper objectMapper) {
         this.customerRepository = customerRepository;
         this.addressRepository = addressRepository;
         this.documentRepository = documentRepository;
         this.contactInfoRepository = contactInfoRepository;
+        this.outboxEventRepository = outboxEventRepository;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional
@@ -64,6 +78,14 @@ public class CustomerService {
 
         Customer savedCustomer = customerRepository.save(customer);
 
+        saveOutboxEvent(savedCustomer.getId(), "CustomerRegistered",
+                new CustomerRegisteredEvent(
+                        UUID.randomUUID(), "CustomerRegistered",
+                        savedCustomer.getId(), savedCustomer.getType(),
+                        savedCustomer.getFirstName(), savedCustomer.getLastName(),
+                        savedCustomer.getCompanyName(), savedCustomer.getIdentityNumber(),
+                        LocalDateTime.now()));
+
         return toResponse(savedCustomer);
     }
 
@@ -81,7 +103,15 @@ public class CustomerService {
         customer.setCompanyName(request.companyName());
         customer.setDateOfBirth(request.dateOfBirth());
 
-        return toResponse(customerRepository.save(customer));
+        Customer saved = customerRepository.save(customer);
+
+        saveOutboxEvent(saved.getId(), "CustomerUpdated",
+                new CustomerUpdatedEvent(
+                        UUID.randomUUID(), "CustomerUpdated",
+                        saved.getId(), saved.getFirstName(), saved.getLastName(),
+                        saved.getCompanyName(), LocalDateTime.now()));
+
+        return toResponse(saved);
     }
 
     @Transactional
@@ -101,7 +131,14 @@ public class CustomerService {
 
         customer.setStatus(CustomerStatus.ACTIVE);
 
-        return toResponse(customerRepository.save(customer));
+        Customer saved = customerRepository.save(customer);
+
+        saveOutboxEvent(saved.getId(), "CustomerKYCApproved",
+                new CustomerKYCApprovedEvent(
+                        UUID.randomUUID(), "CustomerKYCApproved",
+                        saved.getId(), LocalDateTime.now()));
+
+        return toResponse(saved);
     }
 
     @Transactional
@@ -200,6 +237,23 @@ public class CustomerService {
 
     private boolean isValidVkn(String identityNumber) {
         return identityNumber != null && identityNumber.matches("\\d{10}");
+    }
+
+    private void saveOutboxEvent(UUID aggregateId, String eventType, Object payload) {
+        String json;
+        try {
+            json = objectMapper.writeValueAsString(payload);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Could not serialize " + eventType + " event", e);
+        }
+
+        OutboxEvent outboxEvent = new OutboxEvent();
+        outboxEvent.setAggregateId(aggregateId);
+        outboxEvent.setAggregateType("CUSTOMER");
+        outboxEvent.setEventType(eventType);
+        outboxEvent.setPayload(json);
+        outboxEvent.setStatus(OutboxStatus.PENDING);
+        outboxEventRepository.save(outboxEvent);
     }
 
     private CustomerResponse toResponse(Customer customer) {

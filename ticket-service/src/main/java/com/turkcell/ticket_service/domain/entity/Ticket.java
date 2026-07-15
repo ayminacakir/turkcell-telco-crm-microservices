@@ -42,6 +42,9 @@ public class Ticket {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "sla_breach_notified", nullable = false)
+    private boolean slaBreachNotified = false;
+
     @OneToMany(mappedBy = "ticket", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TicketComment> comments = new ArrayList<>();
 
@@ -67,6 +70,9 @@ public class Ticket {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public boolean isSlaBreachNotified() { return slaBreachNotified; }
+    public void setSlaBreachNotified(boolean slaBreachNotified) { this.slaBreachNotified = slaBreachNotified; }
 
     public List<TicketComment> getComments() { return comments; }
     public void setComments(List<TicketComment> comments) { this.comments = comments; }

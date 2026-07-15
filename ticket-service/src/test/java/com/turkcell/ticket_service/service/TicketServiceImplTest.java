@@ -9,6 +9,8 @@ import com.turkcell.ticket_service.dto.TicketStatusUpdateRequest;
 import com.turkcell.ticket_service.exception.InvalidStatusTransitionException;
 import com.turkcell.ticket_service.exception.ResourceNotFoundException;
 import com.turkcell.ticket_service.repository.TicketCommentRepository;
+import com.turkcell.ticket_service.outbox.repository.OutboxEventRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.turkcell.ticket_service.repository.TicketRepository;
 import com.turkcell.ticket_service.service.impl.TicketServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,6 +39,12 @@ class TicketServiceImplTest {
 
     @Mock
     private TicketCommentRepository ticketCommentRepository;
+
+    @Mock
+    private OutboxEventRepository outboxEventRepository;
+
+    @Mock
+    private ObjectMapper objectMapper;
 
     @InjectMocks
     private TicketServiceImpl ticketService;
@@ -111,11 +119,17 @@ class TicketServiceImplTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
-    @Test
-    void create_shouldSetSlaDueAt_basedOnPriority() {
+    @ParameterizedTest(name = "{0} oncelik icin SLA {1} saat olmali")
+    @CsvSource({
+            "CRITICAL, 4",
+            "HIGH, 8",
+            "MEDIUM, 24",
+            "LOW, 72"
+    })
+    void create_shouldSetSlaDueAt_basedOnPriority(TicketPriority priority, long expectedHours) {
         UUID customerId = UUID.randomUUID();
         TicketCreateRequest request = new TicketCreateRequest(
-                customerId, "BILLING", TicketPriority.CRITICAL, "Faturam yanlış geldi");
+                customerId, "BILLING", priority, "Faturam yanlis geldi");
 
         when(ticketRepository.save(any(Ticket.class))).thenAnswer(invocation -> {
             Ticket t = invocation.getArgument(0);
@@ -126,7 +140,7 @@ class TicketServiceImplTest {
         TicketResponse response = ticketService.create(request);
 
         assertThat(response.status()).isEqualTo(TicketStatus.OPEN);
-        assertThat(response.slaDueAt()).isEqualTo(response.createdAt().plusHours(4)); // CRITICAL = 4 saat
-        verify(ticketCommentRepository).save(any());
+        assertThat(response.slaDueAt()).isEqualTo(response.createdAt().plusHours(expectedHours));
+        verify(ticketCommentRepository, atLeastOnce()).save(any());
     }
 }
