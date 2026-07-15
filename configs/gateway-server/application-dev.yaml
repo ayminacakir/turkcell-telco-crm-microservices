@@ -28,3 +28,19 @@ spring:
             uri: lb://payment-service
             predicates:
               - Path=/api/v1/payments/**
+          - id: usage-service
+            uri: lb://usage-service
+            predicates:
+              - Path=/api/v1/usage/**
+          - id: notification-service
+            uri: lb://notification-service
+            predicates:
+              - Path=/api/v1/notifications/**
+          - id: ticket-service
+            uri: lb://ticket-service
+            predicates:
+              - Path=/api/v1/tickets/**
+          - id: product-catalog-service
+            uri: lb://product-catalog-service
+            predicates:
+              - Path=/api/v1/products/**

@@ -15,6 +15,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Component
 @Order(10)
@@ -32,6 +33,7 @@ public class JwtHeaderRelayFilter extends OncePerRequestFilter {
 
             MutableHttpServletRequest mutableRequest = new MutableHttpServletRequest(request);
             mutableRequest.putHeader("X-User-Id", jwt.getSubject());
+            mutableRequest.putHeader("X-Correlation-Id", UUID.randomUUID().toString());
 
             Map<String, Object> realmAccess = jwt.getClaim("realm_access");
             if (realmAccess != null) {
