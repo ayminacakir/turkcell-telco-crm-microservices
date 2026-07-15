@@ -3,6 +3,7 @@ package com.turkcell.billing_service.controller;
 import com.turkcell.billing_service.service.BillingRunService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
  
 @RestController
@@ -12,6 +13,7 @@ public class BillingRunController {
  
     private final BillingRunService billingRunService;
  
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/runs")
     public ResponseEntity<String> triggerBillingRun() {
         billingRunService.runBilling();

@@ -61,6 +61,15 @@ services:
     networks:
       - telco-net
 
+  # ─── REDIS ───────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - telco-net
+
   # ─── PGADMIN ─────────────────────────────────────────
   pgadmin:
     image: dpage/pgadmin4:latest

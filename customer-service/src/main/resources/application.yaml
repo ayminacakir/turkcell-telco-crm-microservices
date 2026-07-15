@@ -1,6 +1,10 @@
 server:
     port: 9002
 
+app:
+    security:
+        pii-encryption-key: w1gBKCjM1rwjpgZIgtakU19gqQU4h7RIG4309dzu5vw=
+
 spring:
     application:
         name: customer-service
@@ -13,3 +17,10 @@ spring:
         producer:
             key-serializer: org.apache.kafka.common.serialization.StringSerializer
             value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    flyway:
+        baseline-on-migrate: true
+    security:
+        oauth2:
+            resourceserver:
+                jwt:
+                    issuer-uri: http://localhost:8085/realms/telco-crm

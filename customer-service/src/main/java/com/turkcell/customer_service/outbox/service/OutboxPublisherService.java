@@ -51,9 +51,10 @@ public class OutboxPublisherService {
 
     private String resolveTopicName(String eventType) {
         return switch (eventType) {
-            case "CustomerRegistered" -> "customer.registered";
-            case "CustomerKYCApproved" -> "customer.kyc.approved";
-            case "CustomerUpdated" -> "customer.updated";
+            case "CustomerRegistered"   -> "customer.registered";
+            case "CustomerKYCApproved"  -> "customer.kyc.approved";
+            case "CustomerKYCRejected"  -> "customer.kyc.rejected";
+            case "CustomerUpdated"      -> "customer.updated";
             default -> null;
         };
     }

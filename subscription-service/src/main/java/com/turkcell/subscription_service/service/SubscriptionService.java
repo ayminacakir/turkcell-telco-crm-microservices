@@ -58,6 +58,7 @@ public class SubscriptionService {
     private final OutboxEventRepository outboxEventRepository;
     private final ProcessedEventRepository processedEventRepository;
     private final ObjectMapper objectMapper;
+    private final AuditLogService auditLogService;
 
     public SubscriptionService(
             SubscriptionRepository subscriptionRepository,
@@ -65,13 +66,15 @@ public class SubscriptionService {
             SimCardRepository simCardRepository,
             OutboxEventRepository outboxEventRepository,
             ProcessedEventRepository processedEventRepository,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            AuditLogService auditLogService) {
         this.subscriptionRepository = subscriptionRepository;
         this.msisdnPoolRepository = msisdnPoolRepository;
         this.simCardRepository = simCardRepository;
         this.outboxEventRepository = outboxEventRepository;
         this.processedEventRepository = processedEventRepository;
         this.objectMapper = objectMapper;
+        this.auditLogService = auditLogService;
     }
 
     @Transactional
@@ -142,6 +145,9 @@ public class SubscriptionService {
         Subscription savedSubscription = subscriptionRepository.save(subscription);
         saveSubscriptionActivatedOutboxEvent(savedSubscription);
 
+        auditLogService.logSubscriptionAction(savedSubscription.getId(), "SUBSCRIPTION_ACTIVATED",
+                "msisdn=" + savedSubscription.getMsisdn() + " tariff=" + savedSubscription.getTariffCode());
+
         return toSubscriptionResponse(savedSubscription);
     }
 
@@ -175,6 +181,9 @@ public class SubscriptionService {
 
         Subscription savedSuspended = subscriptionRepository.save(subscription);
         saveSubscriptionSuspendedOutboxEvent(savedSuspended);
+
+        auditLogService.logSubscriptionAction(savedSuspended.getId(), "SUBSCRIPTION_SUSPENDED", "reason=manual");
+
         return toSubscriptionResponse(savedSuspended);
     }
 
@@ -188,7 +197,11 @@ public class SubscriptionService {
 
         subscription.setStatus(SubscriptionStatus.ACTIVE);
 
-        return toSubscriptionResponse(subscriptionRepository.save(subscription));
+        Subscription savedReactivated = subscriptionRepository.save(subscription);
+
+        auditLogService.logSubscriptionAction(savedReactivated.getId(), "SUBSCRIPTION_REACTIVATED", null);
+
+        return toSubscriptionResponse(savedReactivated);
     }
 
     @Transactional
@@ -204,6 +217,9 @@ public class SubscriptionService {
 
         Subscription savedTerminated = subscriptionRepository.save(subscription);
         saveSubscriptionTerminatedOutboxEvent(savedTerminated);
+
+        auditLogService.logSubscriptionAction(savedTerminated.getId(), "SUBSCRIPTION_TERMINATED", null);
+
         return toSubscriptionResponse(savedTerminated);
     }
 
@@ -325,6 +341,8 @@ public class SubscriptionService {
                 subscription.setStatus(SubscriptionStatus.SUSPENDED);
                 Subscription saved = subscriptionRepository.save(subscription);
                 saveSubscriptionSuspendedOutboxEvent(saved);
+                auditLogService.logSubscriptionAction(saved.getId(), "SUBSCRIPTION_SUSPENDED",
+                        "reason=payment_failed orderId=" + event.orderId());
                 LOGGER.info("Suspended subscription {} due to payment failure orderId={}",
                         saved.getId(), event.orderId());
             }
@@ -414,6 +432,10 @@ public class SubscriptionService {
         outboxEvent.setPayload(payload);
         outboxEvent.setStatus(OutboxStatus.PENDING);
         outboxEventRepository.save(outboxEvent);
+
+        auditLogService.logSubscriptionAction(savedSubscription.getId(), "SUBSCRIPTION_ACTIVATED",
+                "msisdn=" + savedSubscription.getMsisdn() + " tariff=" + savedSubscription.getTariffCode()
+                        + " orderId=" + event.orderId());
 
         saveProcessedEvent(event);
         LOGGER.info("Subscription created and event marked processed eventId={} subscriptionId={}",

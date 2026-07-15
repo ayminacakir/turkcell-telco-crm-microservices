@@ -2,6 +2,7 @@ package com.turkcell.customer_service.entity;
 
 import com.turkcell.customer_service.enums.CustomerStatus;
 import com.turkcell.customer_service.enums.CustomerType;
+import com.turkcell.customer_service.security.EncryptedStringConverter;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -28,7 +29,8 @@ public class Customer {
     @Column(length = 200)
     private String companyName;
 
-    @Column(nullable = false, unique = true, length = 20)
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(nullable = false, unique = true, length = 255)
     private String identityNumber;
 
     private LocalDate dateOfBirth;
