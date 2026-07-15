@@ -18,4 +18,8 @@ public interface TicketService {
     TicketCommentResponse addComment(UUID ticketId, TicketCommentCreateRequest request);
 
     List<TicketCommentResponse> getComments(UUID ticketId);
+
+    TicketResponse assign(UUID id, TicketAssignRequest request);
+
+    TicketResponse resolve(UUID id);
 }

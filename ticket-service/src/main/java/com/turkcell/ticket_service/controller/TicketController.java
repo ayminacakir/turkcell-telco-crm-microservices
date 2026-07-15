@@ -42,6 +42,17 @@ public class TicketController {
         return ResponseEntity.ok(ticketService.updateStatus(id, request));
     }
 
+    @PostMapping("/{id}/assign")
+    public ResponseEntity<TicketResponse> assign(@PathVariable UUID id,
+                                                  @Valid @RequestBody TicketAssignRequest request) {
+        return ResponseEntity.ok(ticketService.assign(id, request));
+    }
+
+    @PostMapping("/{id}/resolve")
+    public ResponseEntity<TicketResponse> resolve(@PathVariable UUID id) {
+        return ResponseEntity.ok(ticketService.resolve(id));
+    }
+
     @PostMapping("/{id}/comments")
     public ResponseEntity<TicketCommentResponse> addComment(@PathVariable UUID id,
                                                               @Valid @RequestBody TicketCommentCreateRequest request) {

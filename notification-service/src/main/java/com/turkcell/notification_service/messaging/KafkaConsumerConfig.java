@@ -6,6 +6,8 @@ import com.turkcell.notification_service.event.QuotaThresholdReachedEvent;
 import com.turkcell.notification_service.event.SubscriptionActivatedEvent;
 import com.turkcell.notification_service.event.InvoiceGeneratedEvent;
 import com.turkcell.notification_service.event.CustomerRegisteredEvent;
+import com.turkcell.notification_service.event.TicketOpenedEvent;
+import com.turkcell.notification_service.event.TicketResolvedEvent;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.beans.factory.annotation.Value;
@@ -85,5 +87,15 @@ public class KafkaConsumerConfig {
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, CustomerRegisteredEvent> customerRegisteredContainerFactory() {
         return factoryFor(CustomerRegisteredEvent.class);
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, TicketOpenedEvent> ticketOpenedContainerFactory() {
+        return factoryFor(TicketOpenedEvent.class);
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, TicketResolvedEvent> ticketResolvedContainerFactory() {
+        return factoryFor(TicketResolvedEvent.class);
     }
 }

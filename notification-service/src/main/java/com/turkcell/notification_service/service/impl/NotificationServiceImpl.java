@@ -12,6 +12,7 @@ import com.turkcell.notification_service.outbox.entity.OutboxEvent;
 import com.turkcell.notification_service.outbox.enums.OutboxStatus;
 import com.turkcell.notification_service.outbox.event.NotificationDispatchedEvent;
 import com.turkcell.notification_service.outbox.repository.OutboxEventRepository;
+import com.turkcell.notification_service.repository.NotificationPreferenceRepository;
 import com.turkcell.notification_service.repository.NotificationRepository;
 import com.turkcell.notification_service.repository.NotificationTemplateRepository;
 import com.turkcell.notification_service.service.NotificationService;
@@ -35,15 +36,18 @@ public class NotificationServiceImpl implements NotificationService {
     private final NotificationTemplateRepository templateRepository;
     private final ObjectMapper objectMapper;
     private final OutboxEventRepository outboxEventRepository;
+    private final NotificationPreferenceRepository preferenceRepository;
 
     public NotificationServiceImpl(NotificationRepository notificationRepository,
                                     NotificationTemplateRepository templateRepository,
                                     ObjectMapper objectMapper,
-                                    OutboxEventRepository outboxEventRepository) {
+                                    OutboxEventRepository outboxEventRepository,
+                                    NotificationPreferenceRepository preferenceRepository) {
         this.notificationRepository = notificationRepository;
         this.templateRepository = templateRepository;
         this.objectMapper = objectMapper;
         this.outboxEventRepository = outboxEventRepository;
+        this.preferenceRepository = preferenceRepository;
     }
 
     @Override
@@ -52,14 +56,28 @@ public class NotificationServiceImpl implements NotificationService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Template not found with code: " + request.templateCode()));
 
-        String renderedBody = render(template.getBodyTemplate(), request.placeholders());
+        // FR-30: Kullanicinin iletisim tercihlerine (opt-in/opt-out) saygi gosterilir.
+        // Kayit yoksa varsayilan opt-in (izinli) kabul edilir.
+        boolean optedOut = preferenceRepository
+                .findByUserIdAndChannel(request.userId(), template.getChannel())
+                .map(com.turkcell.notification_service.domain.entity.NotificationPreference::isOptedOut)
+                .orElse(false);
 
         Notification notification = new Notification();
         notification.setUserId(request.userId());
         notification.setTemplateCode(template.getCode());
         notification.setChannel(template.getChannel());
         notification.setPayloadJson(toJson(request.placeholders()));
-        notification.setStatus(NotificationStatus.PENDING);
+
+        if (optedOut) {
+            log.info("userId={} kanal={} icin bildirimden cikmis (opt-out), gonderim atlaniyor, template={}",
+                    request.userId(), template.getChannel(), template.getCode());
+            notification.setStatus(NotificationStatus.SKIPPED);
+            Notification saved = notificationRepository.save(notification);
+            return toResponse(saved);
+        }
+
+        String renderedBody = render(template.getBodyTemplate(), request.placeholders());
 
         // MVP: gerçek SMS/e-posta/push gönderimi yok, mock gönderim ile SENT'e çekiliyor.
         // İleride burası SmsSenderClient / EmailSenderClient gibi bir port'a devredilecek.

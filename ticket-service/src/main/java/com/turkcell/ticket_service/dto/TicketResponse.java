@@ -13,6 +13,7 @@ public record TicketResponse(
         TicketPriority priority,
         TicketStatus status,
         LocalDateTime slaDueAt,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        String assignedTeam
 ) {
 }
