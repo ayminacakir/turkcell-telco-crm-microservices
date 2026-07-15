@@ -15,3 +15,27 @@ spring:
             uri: lb://subscription-service
             predicates:
               - Path=/api/v1/subscriptions/**
+          - id: billing-service
+            uri: lb://billing-service
+            predicates:
+              - Path=/api/v1/billing/**,/api/v1/invoices/**,/api/v1/bill-cycles/**
+          - id: payment-service
+            uri: lb://payment-service
+            predicates:
+              - Path=/api/v1/payments/**
+          - id: usage-service
+            uri: lb://usage-service
+            predicates:
+              - Path=/api/v1/usage/**
+          - id: notification-service
+            uri: lb://notification-service
+            predicates:
+              - Path=/api/v1/notifications/**,/api/v1/notification-templates/**
+          - id: ticket-service
+            uri: lb://ticket-service
+            predicates:
+              - Path=/api/v1/tickets/**
+          - id: product-catalog-service
+            uri: lb://product-catalog-service
+            predicates:
+              - Path=/api/v1/tariffs/**,/api/v1/addons/**
