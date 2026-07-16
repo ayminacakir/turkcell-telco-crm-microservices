@@ -14,9 +14,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Map;
 
 /**
- * ⚠️ TASLAK — quota.threshold.reached / quota.exceeded payload formatı Mervenur ile
- * netleşmeden bu consumer'lar production'da güvenilir çalışmaz. QuotaThresholdReachedEvent
- * DTO'sundaki alan isimleri kesinleşince burası da güncellenmeli.
+ * quota.threshold.reached / quota.exceeded topic'lerini dinler.
+ * Payload formati usage-service'in gercek koduyla dogrulandi (docs/event-contracts.md #2.5).
+ *
+ * NOT: usage-service event'e henuz customerId koymuyor (Acik Soru #6). customerId
+ * gelmeyen event loglanip ATLANIR — aksi halde bildirim kime gidecegi bilinemez ve
+ * consumer hata dongusune girer. usage-service alani ekledigi anda akis kendiliginden
+ * calisir hale gelir.
  */
 @Component
 public class QuotaEventConsumer {
@@ -41,13 +45,21 @@ public class QuotaEventConsumer {
             return;
         }
 
-        log.info("quota.threshold.reached alındı: customerId={}, threshold={}%",
-                event.customerId(), event.thresholdPercentage());
+        log.info("quota.threshold.reached alındı: subscriptionId={}, type={}, threshold={}",
+                event.subscriptionId(), event.type(), event.threshold());
+
+        if (event.customerId() == null) {
+            log.warn("quota event'inde customerId yok — bildirim kime gidecegi bilinemiyor, atlaniyor. " +
+                    "usage-service event'e customerId eklemeli (event-contracts.md Acik Soru #6). eventId={}",
+                    event.eventId());
+            processedEventRepository.save(new ProcessedEvent(event.eventId(), "QuotaThresholdReached"));
+            return;
+        }
 
         SendNotificationRequest request = new SendNotificationRequest(
                 event.customerId(),
                 "QUOTA_WARNING_80",
-                Map.of("thresholdPercentage", String.valueOf(event.thresholdPercentage()))
+                Map.of("thresholdPercentage", thresholdAsPercentage(event.threshold()))
         );
         notificationService.send(request);
 
@@ -63,7 +75,15 @@ public class QuotaEventConsumer {
             return;
         }
 
-        log.info("quota.exceeded alındı: customerId={}", event.customerId());
+        log.info("quota.exceeded alındı: subscriptionId={}, type={}", event.subscriptionId(), event.type());
+
+        if (event.customerId() == null) {
+            log.warn("quota event'inde customerId yok — bildirim kime gidecegi bilinemiyor, atlaniyor. " +
+                    "usage-service event'e customerId eklemeli (event-contracts.md Acik Soru #6). eventId={}",
+                    event.eventId());
+            processedEventRepository.save(new ProcessedEvent(event.eventId(), "QuotaExceeded"));
+            return;
+        }
 
         SendNotificationRequest request = new SendNotificationRequest(
                 event.customerId(),
@@ -73,5 +93,13 @@ public class QuotaEventConsumer {
         notificationService.send(request);
 
         processedEventRepository.save(new ProcessedEvent(event.eventId(), "QuotaExceeded"));
+    }
+
+    /** "PERCENT_80" → "80" — sablon placeholder'i sayisal deger bekliyor. */
+    private String thresholdAsPercentage(String threshold) {
+        if (threshold == null) {
+            return "";
+        }
+        return threshold.startsWith("PERCENT_") ? threshold.substring("PERCENT_".length()) : threshold;
     }
 }
