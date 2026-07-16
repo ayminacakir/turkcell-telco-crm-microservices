@@ -1,14 +1,17 @@
 package com.turkcell.notification_service.controller;
 
 import com.turkcell.notification_service.dto.NotificationResponse;
+import com.turkcell.notification_service.dto.PageResponse;
 import com.turkcell.notification_service.dto.SendNotificationRequest;
 import com.turkcell.notification_service.service.NotificationService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -37,8 +40,11 @@ public class NotificationController {
         return ResponseEntity.ok(notificationService.getById(id));
     }
 
+    /** Dokuman bolum 12: ?page=0&size=20&sort=sentAt,desc — Spring Data Pageable. */
     @GetMapping
-    public ResponseEntity<List<NotificationResponse>> getByUserId(@RequestParam UUID userId) {
-        return ResponseEntity.ok(notificationService.getByUserId(userId));
+    public ResponseEntity<PageResponse<NotificationResponse>> getByUserId(
+            @RequestParam UUID userId,
+            @PageableDefault(size = 20, sort = "sentAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(notificationService.getByUserId(userId, pageable));
     }
 }

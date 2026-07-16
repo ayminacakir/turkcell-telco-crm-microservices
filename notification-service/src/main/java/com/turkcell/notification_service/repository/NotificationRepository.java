@@ -9,4 +9,6 @@ import java.util.UUID;
 public interface NotificationRepository extends JpaRepository<Notification, UUID> {
 
     List<Notification> findByUserId(UUID userId);
+
+    org.springframework.data.domain.Page<Notification> findByUserId(UUID userId, org.springframework.data.domain.Pageable pageable);
 }

@@ -1,6 +1,7 @@
 package com.turkcell.ticket_service.service;
 
 import com.turkcell.ticket_service.dto.*;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.UUID;
@@ -11,7 +12,7 @@ public interface TicketService {
 
     TicketResponse getById(UUID id);
 
-    List<TicketResponse> getByCustomerId(UUID customerId);
+    PageResponse<TicketResponse> getByCustomerId(UUID customerId, Pageable pageable);
 
     TicketResponse updateStatus(UUID id, TicketStatusUpdateRequest request);
 

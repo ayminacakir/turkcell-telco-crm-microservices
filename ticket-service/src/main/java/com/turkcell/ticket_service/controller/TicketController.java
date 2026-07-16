@@ -3,6 +3,9 @@ package com.turkcell.ticket_service.controller;
 import com.turkcell.ticket_service.dto.*;
 import com.turkcell.ticket_service.service.TicketService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,9 +34,12 @@ public class TicketController {
         return ResponseEntity.ok(ticketService.getById(id));
     }
 
+    /** Dokuman bolum 12: ?page=0&size=20&sort=createdAt,desc — Spring Data Pageable. */
     @GetMapping
-    public ResponseEntity<List<TicketResponse>> getByCustomerId(@RequestParam UUID customerId) {
-        return ResponseEntity.ok(ticketService.getByCustomerId(customerId));
+    public ResponseEntity<PageResponse<TicketResponse>> getByCustomerId(
+            @RequestParam UUID customerId,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(ticketService.getByCustomerId(customerId, pageable));
     }
 
     @PatchMapping("/{id}/status")

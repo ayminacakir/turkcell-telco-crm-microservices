@@ -20,6 +20,7 @@ import com.turkcell.ticket_service.repository.TicketRepository;
 import com.turkcell.ticket_service.service.TicketService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -121,8 +122,8 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<TicketResponse> getByCustomerId(UUID customerId) {
-        return ticketRepository.findByCustomerId(customerId).stream().map(this::toResponse).toList();
+    public PageResponse<TicketResponse> getByCustomerId(UUID customerId, Pageable pageable) {
+        return PageResponse.of(ticketRepository.findByCustomerId(customerId, pageable).map(this::toResponse));
     }
 
     @Override

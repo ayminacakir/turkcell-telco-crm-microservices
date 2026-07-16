@@ -1,9 +1,10 @@
 package com.turkcell.notification_service.service;
 
 import com.turkcell.notification_service.dto.NotificationResponse;
+import com.turkcell.notification_service.dto.PageResponse;
 import com.turkcell.notification_service.dto.SendNotificationRequest;
+import org.springframework.data.domain.Pageable;
 
-import java.util.List;
 import java.util.UUID;
 
 public interface NotificationService {
@@ -17,5 +18,5 @@ public interface NotificationService {
 
     NotificationResponse getById(UUID id);
 
-    List<NotificationResponse> getByUserId(UUID userId);
+    PageResponse<NotificationResponse> getByUserId(UUID userId, Pageable pageable);
 }
