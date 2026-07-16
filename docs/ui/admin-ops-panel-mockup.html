@@ -1,0 +1,309 @@
+<title>TelcoX Ops Paneli — Mockup</title>
+<style>
+  :root {
+    --bg: #F3F6F6;
+    --surface: #FFFFFF;
+    --surface-2: #EBF0F0;
+    --ink: #16232A;
+    --muted: #5F6B6E;
+    --line: #DDE4E4;
+    --accent: #0B7285;
+    --accent-soft: #D8ECF0;
+    --ok: #2F7D5B;
+    --ok-soft: #DCEFE5;
+    --warn: #A05A0C;
+    --warn-soft: #F7E8D2;
+    --crit: #B03A3A;
+    --crit-soft: #F6DEDE;
+    --console-bg: #101B20;
+    --console-ink: #C7E5DA;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0D1519;
+      --surface: #152025;
+      --surface-2: #1B282E;
+      --ink: #E6EDEE;
+      --muted: #90A0A4;
+      --line: #243237;
+      --accent: #45B9CC;
+      --accent-soft: #123A42;
+      --ok: #5BC08D;
+      --ok-soft: #14352A;
+      --warn: #E0A552;
+      --warn-soft: #3B2C14;
+      --crit: #E07272;
+      --crit-soft: #3D1D1D;
+      --console-bg: #0A1114;
+      --console-ink: #A9D9C8;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0D1519; --surface: #152025; --surface-2: #1B282E; --ink: #E6EDEE;
+    --muted: #90A0A4; --line: #243237; --accent: #45B9CC; --accent-soft: #123A42;
+    --ok: #5BC08D; --ok-soft: #14352A; --warn: #E0A552; --warn-soft: #3B2C14;
+    --crit: #E07272; --crit-soft: #3D1D1D; --console-bg: #0A1114; --console-ink: #A9D9C8;
+  }
+  :root[data-theme="light"] {
+    --bg: #F3F6F6; --surface: #FFFFFF; --surface-2: #EBF0F0; --ink: #16232A;
+    --muted: #5F6B6E; --line: #DDE4E4; --accent: #0B7285; --accent-soft: #D8ECF0;
+    --ok: #2F7D5B; --ok-soft: #DCEFE5; --warn: #A05A0C; --warn-soft: #F7E8D2;
+    --crit: #B03A3A; --crit-soft: #F6DEDE; --console-bg: #101B20; --console-ink: #C7E5DA;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.55 -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px 64px; }
+
+  header.top {
+    display: flex; align-items: center; gap: 14px;
+    padding: 18px 0; border-bottom: 1px solid var(--line); margin-bottom: 24px;
+  }
+  .wordmark { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; }
+  .wordmark span { color: var(--accent); }
+  .divider { width: 1px; height: 22px; background: var(--line); }
+  .app-name { font-size: 14px; color: var(--muted); font-weight: 600; }
+  .env-chip {
+    margin-left: auto; font-size: 12px; font-weight: 700; letter-spacing: 0.06em;
+    padding: 4px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent);
+  }
+
+  .eyebrow {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--muted); margin: 0 0 10px;
+  }
+  h2 { font-size: 17px; font-weight: 700; margin: 0 0 4px; text-wrap: balance; }
+  .section-sub { font-size: 13px; color: var(--muted); margin: 0 0 16px; }
+
+  /* Özet şeridi */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 32px; }
+  .stat {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px;
+  }
+  .stat .label { font-size: 12px; color: var(--muted); font-weight: 600; }
+  .stat .value { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; margin-top: 2px; }
+  .stat .value small { font-size: 14px; font-weight: 600; color: var(--muted); }
+  .stat.crit .value { color: var(--crit); }
+
+  /* Sağlık panosu */
+  .board { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; margin-bottom: 40px; }
+  .svc {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+    padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;
+  }
+  .svc-head { display: flex; align-items: center; gap: 8px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .dot.up { background: var(--ok); }
+  .dot.down { background: var(--crit); }
+  .dot.starting { background: var(--warn); }
+  .svc-name { font-weight: 700; font-size: 14px; }
+  .svc-meta { display: flex; gap: 10px; font-size: 12px; color: var(--muted); }
+  .svc-meta .mono { font-size: 12px; }
+  .pill {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.04em; padding: 2px 8px;
+    border-radius: 999px; margin-left: auto;
+  }
+  .pill.up { background: var(--ok-soft); color: var(--ok); }
+  .pill.down { background: var(--crit-soft); color: var(--crit); }
+  .pill.starting { background: var(--warn-soft); color: var(--warn); }
+  .owner { font-size: 11px; color: var(--muted); }
+  .svc.is-down { border-color: var(--crit); }
+
+  /* Test konsolu */
+  .forms { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .card h3 { margin: 0; font-size: 15px; font-weight: 700; }
+  .endpoint { font-size: 12px; color: var(--accent); }
+  label { font-size: 12px; font-weight: 600; color: var(--muted); display: block; margin-bottom: 3px; }
+  input, select, textarea {
+    width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 7px;
+    background: var(--bg); color: var(--ink); font: inherit; font-size: 13px;
+  }
+  input:focus, select:focus, textarea:focus, button:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 1px;
+  }
+  textarea { resize: vertical; min-height: 54px; }
+  .btn {
+    margin-top: 4px; padding: 9px 14px; border: none; border-radius: 7px; cursor: pointer;
+    background: var(--accent); color: var(--bg); font-weight: 700; font-size: 13px;
+  }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .console {
+    margin-top: 28px; background: var(--console-bg); color: var(--console-ink);
+    border-radius: 10px; padding: 16px 18px; overflow-x: auto;
+  }
+  .console .hdr { color: #7FA6B0; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 8px; }
+  .console pre { margin: 0; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12.5px; line-height: 1.6; }
+  .console .status-line { color: #8FD9A8; }
+
+  footer.note {
+    margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line);
+    font-size: 12.5px; color: var(--muted);
+  }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="wordmark">Telco<span>X</span></div>
+    <div class="divider"></div>
+    <div class="app-name">Ops Paneli</div>
+    <div class="env-chip">DEV · LOKAL</div>
+  </header>
+
+  <p class="eyebrow">Genel Durum</p>
+  <section class="stats">
+    <div class="stat">
+      <div class="label">Servisler</div>
+      <div class="value">8<small> / 9 ayakta</small></div>
+    </div>
+    <div class="stat crit">
+      <div class="label">Sorunlu servis</div>
+      <div class="value">usage<small>-service</small></div>
+    </div>
+    <div class="stat">
+      <div class="label">Outbox bekleyen event</div>
+      <div class="value mono">3</div>
+    </div>
+    <div class="stat">
+      <div class="label">Son 24 saat bildirim</div>
+      <div class="value mono">1.284</div>
+    </div>
+  </section>
+
+  <p class="eyebrow">Servis Sağlığı</p>
+  <h2>9 mikroservis — /actuator/health</h2>
+  <p class="section-sub">Her kart 10 saniyede bir yenilenir. Kırmızı kart, health endpoint'ine ulaşılamadığı anlamına gelir.</p>
+
+  <section class="board">
+    <div class="svc">
+      <div class="svc-head"><span class="dot up"></span><span class="svc-name">customer-service</span><span class="pill up">UP</span></div>
+      <div class="svc-meta"><span class="mono">:9002</span><span>p95 <span class="mono">41 ms</span></span></div>
+      <div class="owner">Sorumlu: Aymina</div>
+    </div>
+    <div class="svc">
+      <div class="svc-head"><span class="dot up"></span><span class="svc-name">product-catalog</span><span class="pill up">UP</span></div>
+      <div class="svc-meta"><span class="mono">:9003</span><span>p95 <span class="mono">12 ms</span></span><span>cache hit <span class="mono">%94</span></span></div>
+      <div class="owner">Sorumlu: Nasrulla</div>
+    </div>
+    <div class="svc">
+      <div class="svc-head"><span class="dot up"></span><span class="svc-name">order-service</span><span class="pill up">UP</span></div>
+      <div class="svc-meta"><span class="mono">:9004</span><span>p95 <span class="mono">88 ms</span></span></div>
+      <div class="owner">Sorumlu: Aymina</div>
+    </div>
+    <div class="svc">
+      <div class="svc-head"><span class="dot up"></span><span class="svc-name">subscription</span><span class="pill up">UP</span></div>
+      <div class="svc-meta"><span class="mono">:9005</span><span>p95 <span class="mono">63 ms</span></span></div>
+      <div class="owner">Sorumlu: Aymina</div>
+    </div>
+    <div class="svc is-down">
+      <div class="svc-head"><span class="dot down"></span><span class="svc-name">usage-service</span><span class="pill down">DOWN</span></div>
+      <div class="svc-meta"><span class="mono">:9006</span><span>bağlantı reddedildi</span></div>
+      <div class="owner">Sorumlu: Mervenur</div>
+    </div>
+    <div class="svc">
+      <div class="svc-head"><span class="dot up"></span><span class="svc-name">billing-service</span><span class="pill up">UP</span></div>
+      <div class="svc-meta"><span class="mono">:9007</span><span>p95 <span class="mono">120 ms</span></span></div>
+      <div class="owner">Sorumlu: Mervenur</div>
+    </div>
+    <div class="svc">
+      <div class="svc-head"><span class="dot up"></span><span class="svc-name">payment-service</span><span class="pill up">UP</span></div>
+      <div class="svc-meta"><span class="mono">:9008</span><span>p95 <span class="mono">97 ms</span></span></div>
+      <div class="owner">Sorumlu: Mervenur</div>
+    </div>
+    <div class="svc">
+      <div class="svc-head"><span class="dot up"></span><span class="svc-name">notification</span><span class="pill up">UP</span></div>
+      <div class="svc-meta"><span class="mono">:9009</span><span>kuyruk <span class="mono">0</span></span></div>
+      <div class="owner">Sorumlu: Nasrulla</div>
+    </div>
+    <div class="svc">
+      <div class="svc-head"><span class="dot starting"></span><span class="svc-name">ticket-service</span><span class="pill starting">BAŞLIYOR</span></div>
+      <div class="svc-meta"><span class="mono">:9010</span><span>Flyway migration çalışıyor…</span></div>
+      <div class="owner">Sorumlu: Nasrulla</div>
+    </div>
+  </section>
+
+  <p class="eyebrow">Test Konsolu</p>
+  <h2>Gerçek istek gönder</h2>
+  <p class="section-sub">Formlar gateway (:8080) üzerinden gerçek REST çağrısı yapar; cevap alttaki konsola düşer. Bu bir mockup'tır — butonlar henüz bağlı değildir.</p>
+
+  <section class="forms">
+    <div class="card">
+      <h3>Tarife oluştur</h3>
+      <div class="endpoint mono">POST /api/v1/tariffs</div>
+      <div class="row2">
+        <div><label for="t-code">Kod</label><input id="t-code" value="YOUTH_HYBRID_15GB"></div>
+        <div><label for="t-type">Tip</label>
+          <select id="t-type"><option>POSTPAID</option><option>PREPAID</option><option selected>HYBRID</option></select>
+        </div>
+      </div>
+      <div><label for="t-name">Ad</label><input id="t-name" value="Genç Hybrid 15GB"></div>
+      <div class="row2">
+        <div><label for="t-fee">Aylık ücret (TRY)</label><input id="t-fee" class="mono" value="229.90"></div>
+        <div><label for="t-seg">Hedef segment</label><input id="t-seg" value="YOUTH"></div>
+      </div>
+      <button class="btn" type="button">Tarifeyi oluştur</button>
+    </div>
+
+    <div class="card">
+      <h3>Destek talebi aç</h3>
+      <div class="endpoint mono">POST /api/v1/tickets</div>
+      <div><label for="k-cust">Müşteri ID</label><input id="k-cust" class="mono" value="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"></div>
+      <div class="row2">
+        <div><label for="k-cat">Kategori</label>
+          <select id="k-cat"><option selected>BILLING</option><option>NETWORK</option><option>GENERAL</option></select>
+        </div>
+        <div><label for="k-pri">Öncelik</label>
+          <select id="k-pri"><option>LOW</option><option>MEDIUM</option><option selected>HIGH</option><option>CRITICAL</option></select>
+        </div>
+      </div>
+      <div><label for="k-desc">Açıklama</label><textarea id="k-desc">Faturamda tanımadığım bir kalem var.</textarea></div>
+      <button class="btn" type="button">Talebi aç</button>
+    </div>
+
+    <div class="card">
+      <h3>Bildirim gönder</h3>
+      <div class="endpoint mono">POST /api/v1/notifications/send</div>
+      <div><label for="n-user">Kullanıcı ID</label><input id="n-user" class="mono" value="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"></div>
+      <div><label for="n-tpl">Şablon</label>
+        <select id="n-tpl">
+          <option selected>QUOTA_WARNING_80 · SMS</option>
+          <option>QUOTA_EXCEEDED · SMS</option>
+          <option>PAYMENT_RECEIVED · SMS</option>
+          <option>INVOICE_GENERATED · EMAIL</option>
+          <option>TICKET_OPENED · SMS</option>
+          <option>CUSTOMER_WELCOME · SMS</option>
+        </select>
+      </div>
+      <div><label for="n-ph">Placeholder'lar (JSON)</label><textarea id="n-ph" class="mono">{"thresholdPercentage":"80"}</textarea></div>
+      <button class="btn" type="button">Bildirimi gönder</button>
+    </div>
+  </section>
+
+  <div class="console">
+    <div class="hdr">Son cevap · tarife oluştur</div>
+    <pre><span class="status-line">201 Created · 84 ms · Correlation-Id: 9f3c1b7e</span>
+{
+  "code": "YOUTH_HYBRID_15GB",
+  "name": "Genç Hybrid 15GB",
+  "type": "HYBRID",
+  "monthlyFee": 229.90,
+  "currency": "TRY",
+  "targetSegment": "YOUTH",
+  "version": 1,
+  "status": "ACTIVE"
+}</pre>
+  </div>
+
+  <footer class="note">
+    Mockup — tüm veriler örnektir. Gerçek sürümde kartlar <span class="mono">/actuator/health</span>'i
+    periyodik yoklar, formlar gateway üzerinden canlı istek atar. · TelcoX CRM · Turkcell Geleceği Yazanlar 2026
+  </footer>
+</div>
