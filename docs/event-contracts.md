@@ -24,8 +24,9 @@ tüketici sayısı serbesttir. İdempotency: tüm consumer'lar `eventId`'yi
 | `payment.failed` | payment-service (Mervenur) | order, notification | ✅ Netleşti (#2.2) |
 | `subscription.activated` | subscription-service (Aymina) | order, billing, notification | ✅ Netleşti |
 | `invoice.generated` | billing-service (Mervenur) | notification, payment | ✅ Netleşti |
-| `quota.threshold.reached` | usage-service (Mervenur) | notification | ⚠️ TASLAK (Açık Soru #2) |
-| `quota.exceeded` | usage-service (Mervenur) | notification | ⚠️ TASLAK (Açık Soru #5) |
+| `quota.threshold.reached` | usage-service (Mervenur) | notification | ✅ Netleşti (#2.5) — customerId bekleniyor (Açık Soru #6) |
+| `quota.exceeded` | usage-service (Mervenur) | notification | ✅ Netleşti (#2.5) — customerId bekleniyor (Açık Soru #6) |
+| `usage.aggregated` | usage-service (Mervenur) | billing | ✅ Netleşti |
 | `tariff.created` | product-catalog-service (Nasrulla) | — | ✅ Netleşti |
 | `tariff.price.changed` | product-catalog-service (Nasrulla) | — | ✅ Netleşti |
 | `ticket.opened` | ticket-service (Nasrulla) | notification | ✅ Netleşti |
@@ -73,17 +74,21 @@ tüketici sayısı serbesttir. İdempotency: tüm consumer'lar `eventId`'yi
   "generatedAt": "ISO-8601" }
 ```
 
-### 2.5 quota.threshold.reached / quota.exceeded — ⚠️ TASLAK
+### 2.5 quota.threshold.reached / quota.exceeded — `QuotaThresholdReached` / `QuotaExceeded`
 
-Notification tarafındaki mevcut tahmini format (`QuotaThresholdReachedEvent`):
+Usage-service'in **gerçek** payload'ı (origin/merve `054c48f`, `usage_service.event.QuotaThresholdEvent`
+sınıfından doğrulandı). İki topic de aynı yapıyı kullanır; `eventType` alanı ayırt eder:
 
 ```json
 { "eventId": "uuid", "eventType": "QuotaThresholdReached",
-  "customerId": "uuid", "subscriptionId": "uuid", "msisdn": "string",
-  "thresholdPercentage": 80, "occurredAt": "ISO-8601" }
+  "subscriptionId": "uuid", "type": "VOICE|SMS|DATA",
+  "threshold": "PERCENT_80|PERCENT_100", "remaining": 0 }
 ```
 
-> Usage-service'in gerçek payload'ı ile **doğrulanmadı** — bkz. Açık Sorular #2 ve #5.
+> ⚠️ **Eksik alan — Açık Soru #6:** Event'te `customerId` yok; notification bildirimi kime
+> göndereceğini bilemez ve bu event'leri (loglayıp) atlar. `Quota` entity'sinde `customer_id`
+> alanı zaten mevcut — usage-service'in event'e `customerId` eklemesi bekleniyor. Alan
+> eklendiği anda notification tarafı kod değişikliği gerektirmeden çalışır.
 
 ### 2.6 tariff.created — `TariffCreated`
 
@@ -139,13 +144,17 @@ Notification tarafındaki mevcut tahmini format (`QuotaThresholdReachedEvent`):
 ## Açık Sorular
 
 1. ~~payment.completed payload formatı~~ → Netleşti (#2.2).
-2. **`quota.threshold.reached` payload formatı** — usage-service (Mervenur) gerçekte
-   hangi alanları publish ediyor? `customerId` mi `userId` mı? `thresholdPercentage`
-   alan adı doğru mu? Netleşince `QuotaThresholdReachedEvent` ve bu doküman güncellenmeli.
-3. Eşik değerleri (%80/%100) usage-service'te mi sabit, config'den mi geliyor?
-   Farklı eşikler gelirse notification tarafında template seçimi eşiğe göre yapılmalı
-   (şu an %80 → `QUOTA_WARNING_80` sabit eşlemesi var).
-4. `invoice.generated`'ı payment-service'in auto-pay senaryosu için tüketmesi
-   planlanıyor (doküman 8.7) — Mervenur tarafında bu consumer var mı?
-5. **`quota.exceeded` ayrı bir event tipi mi**, yoksa `QuotaThresholdReached(100)` mü?
-   Şu an notification her iki topic'i de aynı DTO ile parse ediyor.
+2. ~~`quota.threshold.reached` payload formatı~~ → Netleşti (#2.5): gerçek format
+   usage-service kodundan doğrulandı; `QuotaThresholdReachedEvent` DTO'su güncellendi.
+3. Eşik değerleri usage-service'te sabit: %80'de bir kez `PERCENT_80`, %100'de
+   `PERCENT_100` üretilir (UsageServiceImpl). Kota tipi başına (VOICE/SMS/DATA)
+   ayrı event gelir — notification şu an tip ayrımı yapmadan aynı şablonu kullanıyor,
+   ileride tipe göre şablon zenginleştirilebilir.
+4. `invoice.generated`'ı payment-service auto-pay için tüketiyor (Mervenur'un raporu
+   #4.7 doğruladı) → kapandı.
+5. ~~`quota.exceeded` ayrı bir event tipi mi?~~ → Netleşti: aynı `QuotaThresholdEvent`
+   yapısı, `eventType=QuotaExceeded` ve `threshold=PERCENT_100` ile ayrışıyor.
+6. **`customerId` alanı eksik (AKTİF):** quota event'lerinde `customerId` yok;
+   notification bildirimi adresleyemiyor ve bu event'leri atlıyor. `Quota` entity'sinde
+   `customer_id` mevcut — **Mervenur'dan istek:** `QuotaThresholdEvent`'e `customerId`
+   alanını eklemesi. Eklendiğinde notification tarafı otomatik çalışır.
