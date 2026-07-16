@@ -3,6 +3,7 @@ package com.turkcell.product_catalog_service.service.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.turkcell.product_catalog_service.domain.entity.Tariff;
+import com.turkcell.product_catalog_service.domain.entity.TariffVersion;
 import com.turkcell.product_catalog_service.domain.enums.TariffStatus;
 import com.turkcell.product_catalog_service.dto.TariffCreateRequest;
 import com.turkcell.product_catalog_service.dto.TariffResponse;
@@ -14,6 +15,7 @@ import com.turkcell.product_catalog_service.outbox.event.TariffCreatedEvent;
 import com.turkcell.product_catalog_service.outbox.event.TariffPriceChangedEvent;
 import com.turkcell.product_catalog_service.outbox.repository.OutboxEventRepository;
 import com.turkcell.product_catalog_service.repository.TariffRepository;
+import com.turkcell.product_catalog_service.repository.TariffVersionRepository;
 import com.turkcell.product_catalog_service.service.TariffService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,13 +33,16 @@ public class TariffServiceImpl implements TariffService {
     private static final String CURRENCY = "TRY";
 
     private final TariffRepository tariffRepository;
+    private final TariffVersionRepository tariffVersionRepository;
     private final OutboxEventRepository outboxEventRepository;
     private final ObjectMapper objectMapper;
 
     public TariffServiceImpl(TariffRepository tariffRepository,
+                              TariffVersionRepository tariffVersionRepository,
                               OutboxEventRepository outboxEventRepository,
                               ObjectMapper objectMapper) {
         this.tariffRepository = tariffRepository;
+        this.tariffVersionRepository = tariffVersionRepository;
         this.outboxEventRepository = outboxEventRepository;
         this.objectMapper = objectMapper;
     }
@@ -59,6 +64,8 @@ public class TariffServiceImpl implements TariffService {
         tariff.setStatus(TariffStatus.ACTIVE);
         tariff.setEffectiveFrom(request.effectiveFrom());
         tariff.setEffectiveTo(request.effectiveTo());
+        tariff.setTargetSegment(request.targetSegment());
+        tariff.setVersion(1);
 
         Tariff saved = tariffRepository.save(tariff);
 
@@ -102,6 +109,11 @@ public class TariffServiceImpl implements TariffService {
         Tariff tariff = tariffRepository.findByCode(code)
                 .orElseThrow(() -> new ResourceNotFoundException("Tariff not found with code: " + code));
 
+        // FR-08: degisiklikten once mevcut hal snapshot'lanir, versiyon artar.
+        // Eski abonelerin bagli oldugu kosullar tariff_versions uzerinden korunur.
+        tariffVersionRepository.save(TariffVersion.snapshotOf(tariff));
+        tariff.setVersion(tariff.getVersion() + 1);
+
         BigDecimal oldFee = tariff.getMonthlyFee();
         tariff.setMonthlyFee(newMonthlyFee);
         Tariff saved = tariffRepository.save(tariff);
@@ -113,6 +125,18 @@ public class TariffServiceImpl implements TariffService {
                         LocalDateTime.now()));
 
         return toResponse(saved);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TariffResponse> getVersions(String code) {
+        // Tarifenin var oldugunu dogrula, yoksa 404 donsun.
+        if (!tariffRepository.existsByCode(code)) {
+            throw new ResourceNotFoundException("Tariff not found with code: " + code);
+        }
+        return tariffVersionRepository.findByCodeOrderByVersionDesc(code).stream()
+                .map(this::toResponse)
+                .toList();
     }
 
     /**
@@ -158,7 +182,28 @@ public class TariffServiceImpl implements TariffService {
                 t.getDataMbIncluded(),
                 t.getStatus(),
                 t.getEffectiveFrom(),
-                t.getEffectiveTo()
+                t.getEffectiveTo(),
+                t.getTargetSegment(),
+                t.getVersion()
+        );
+    }
+
+    private TariffResponse toResponse(TariffVersion v) {
+        return new TariffResponse(
+                v.getTariffId(),
+                v.getCode(),
+                v.getName(),
+                v.getType(),
+                v.getMonthlyFee(),
+                CURRENCY,
+                v.getMinutesIncluded(),
+                v.getSmsIncluded(),
+                v.getDataMbIncluded(),
+                v.getStatus(),
+                v.getEffectiveFrom(),
+                v.getEffectiveTo(),
+                v.getTargetSegment(),
+                v.getVersion()
         );
     }
 }

@@ -1,6 +1,7 @@
 package com.turkcell.product_catalog_service.service;
 
 import com.turkcell.product_catalog_service.domain.entity.Tariff;
+import com.turkcell.product_catalog_service.domain.entity.TariffVersion;
 import com.turkcell.product_catalog_service.domain.enums.TariffStatus;
 import com.turkcell.product_catalog_service.domain.enums.TariffType;
 import com.turkcell.product_catalog_service.dto.TariffCreateRequest;
@@ -8,6 +9,7 @@ import com.turkcell.product_catalog_service.dto.TariffResponse;
 import com.turkcell.product_catalog_service.exception.DuplicateCodeException;
 import com.turkcell.product_catalog_service.exception.ResourceNotFoundException;
 import com.turkcell.product_catalog_service.repository.TariffRepository;
+import com.turkcell.product_catalog_service.repository.TariffVersionRepository;
 import com.turkcell.product_catalog_service.outbox.repository.OutboxEventRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.turkcell.product_catalog_service.service.impl.TariffServiceImpl;
@@ -34,6 +36,9 @@ class TariffServiceImplTest {
 
     @Mock
     private TariffRepository tariffRepository;
+
+    @Mock
+    private TariffVersionRepository tariffVersionRepository;
 
     @Mock
     private OutboxEventRepository outboxEventRepository;
@@ -66,7 +71,7 @@ class TariffServiceImplTest {
         TariffCreateRequest request = new TariffCreateRequest(
                 "POSTPAID_20GB", "20GB Postpaid Paket", TariffType.POSTPAID,
                 new BigDecimal("299.90"), 1000, 500, 20000,
-                LocalDate.of(2026, 1, 1), null
+                LocalDate.of(2026, 1, 1), null, "GENERAL"
         );
         when(tariffRepository.existsByCode("POSTPAID_20GB")).thenReturn(false);
         when(tariffRepository.save(any(Tariff.class))).thenReturn(sampleTariff);
@@ -84,7 +89,7 @@ class TariffServiceImplTest {
         TariffCreateRequest request = new TariffCreateRequest(
                 "POSTPAID_20GB", "20GB Postpaid Paket", TariffType.POSTPAID,
                 new BigDecimal("299.90"), 1000, 500, 20000,
-                LocalDate.of(2026, 1, 1), null
+                LocalDate.of(2026, 1, 1), null, "GENERAL"
         );
         when(tariffRepository.existsByCode("POSTPAID_20GB")).thenReturn(true);
 
@@ -156,5 +161,46 @@ class TariffServiceImplTest {
         List<TariffResponse> result = tariffService.getActive();
 
         assertThat(result).hasSize(1);
+    }
+
+    @Test
+    void updatePrice_shouldSnapshotOldVersionAndIncrementVersion() {
+        sampleTariff.setVersion(1);
+        when(tariffRepository.findByCode("POSTPAID_20GB")).thenReturn(Optional.of(sampleTariff));
+        when(tariffRepository.save(any(Tariff.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        TariffResponse response = tariffService.updatePrice("POSTPAID_20GB", new BigDecimal("349.90"));
+
+        // FR-08: onceki hal (eski fiyat + eski versiyon no) snapshot'lanmali
+        verify(tariffVersionRepository).save(argThat(v ->
+                v.getVersion() == 1 && v.getMonthlyFee().compareTo(new BigDecimal("299.90")) == 0));
+        assertThat(response.version()).isEqualTo(2);
+        assertThat(response.monthlyFee()).isEqualByComparingTo("349.90");
+    }
+
+    @Test
+    void getVersions_shouldThrowResourceNotFoundException_whenTariffNotExists() {
+        when(tariffRepository.existsByCode("UNKNOWN")).thenReturn(false);
+
+        assertThatThrownBy(() -> tariffService.getVersions("UNKNOWN"))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("UNKNOWN");
+
+        verify(tariffVersionRepository, never()).findByCodeOrderByVersionDesc(any());
+    }
+
+    @Test
+    void getVersions_shouldReturnArchivedVersionsNewestFirst() {
+        sampleTariff.setVersion(2);
+        TariffVersion archived = TariffVersion.snapshotOf(sampleTariff);
+        archived.setVersion(1);
+        when(tariffRepository.existsByCode("POSTPAID_20GB")).thenReturn(true);
+        when(tariffVersionRepository.findByCodeOrderByVersionDesc("POSTPAID_20GB"))
+                .thenReturn(List.of(archived));
+
+        List<TariffResponse> result = tariffService.getVersions("POSTPAID_20GB");
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).version()).isEqualTo(1);
     }
 }
