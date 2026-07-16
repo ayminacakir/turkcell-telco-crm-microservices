@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.turkcell.product_catalog_service.domain.entity.Tariff;
 import com.turkcell.product_catalog_service.domain.entity.TariffVersion;
 import com.turkcell.product_catalog_service.domain.enums.TariffStatus;
+import com.turkcell.product_catalog_service.config.CacheConfig;
+import com.turkcell.product_catalog_service.dto.PageResponse;
 import com.turkcell.product_catalog_service.dto.TariffCreateRequest;
 import com.turkcell.product_catalog_service.dto.TariffResponse;
 import com.turkcell.product_catalog_service.exception.DuplicateCodeException;
@@ -17,6 +19,9 @@ import com.turkcell.product_catalog_service.outbox.repository.OutboxEventReposit
 import com.turkcell.product_catalog_service.repository.TariffRepository;
 import com.turkcell.product_catalog_service.repository.TariffVersionRepository;
 import com.turkcell.product_catalog_service.service.TariffService;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -80,8 +85,14 @@ public class TariffServiceImpl implements TariffService {
         return toResponse(saved);
     }
 
+    /**
+     * Hot-path: Order Service her sipariste bu endpoint'i cagirir (dokuman 9.1:
+     * "Senkron REST + cache, snapshot alinmali"). Cache-aside: ilk cagri DB'den
+     * okuyup Redis'e yazar, sonrakiler cache'ten doner. TTL: 10 dk (CacheConfig).
+     */
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = CacheConfig.TARIFFS_CACHE, key = "#code")
     public TariffResponse getByCode(String code) {
         Tariff tariff = tariffRepository.findByCode(code)
                 .orElseThrow(() -> new ResourceNotFoundException("Tariff not found with code: " + code));
@@ -90,21 +101,20 @@ public class TariffServiceImpl implements TariffService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<TariffResponse> getAll() {
-        return tariffRepository.findAll().stream().map(this::toResponse).toList();
+    public PageResponse<TariffResponse> getAll(Pageable pageable) {
+        return PageResponse.of(tariffRepository.findAll(pageable).map(this::toResponse));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<TariffResponse> getActive() {
-        LocalDate today = LocalDate.now();
-        return tariffRepository.findByStatus(TariffStatus.ACTIVE).stream()
-                .filter(t -> isCurrentlyValid(t, today))
-                .map(this::toResponse)
-                .toList();
+    public PageResponse<TariffResponse> getActive(Pageable pageable) {
+        return PageResponse.of(
+                tariffRepository.findValidOn(TariffStatus.ACTIVE, LocalDate.now(), pageable)
+                        .map(this::toResponse));
     }
 
     @Override
+    @CacheEvict(cacheNames = CacheConfig.TARIFFS_CACHE, key = "#code")
     public TariffResponse updatePrice(String code, BigDecimal newMonthlyFee) {
         Tariff tariff = tariffRepository.findByCode(code)
                 .orElseThrow(() -> new ResourceNotFoundException("Tariff not found with code: " + code));
@@ -137,19 +147,6 @@ public class TariffServiceImpl implements TariffService {
         return tariffVersionRepository.findByCodeOrderByVersionDesc(code).stream()
                 .map(this::toResponse)
                 .toList();
-    }
-
-    /**
-     * Bir tarifenin "gercekten bugun gecerli" olmasi icin status=ACTIVE olmasi yetmez;
-     * effectiveFrom/effectiveTo tarih araligina da bugunun dahil olmasi gerekir.
-     * effectiveTo null ise sinirsiz gecerlilik anlamina gelir.
-     */
-    private boolean isCurrentlyValid(Tariff tariff, LocalDate today) {
-        boolean startedAlready = tariff.getEffectiveFrom() == null
-                || !today.isBefore(tariff.getEffectiveFrom());
-        boolean notEndedYet = tariff.getEffectiveTo() == null
-                || !today.isAfter(tariff.getEffectiveTo());
-        return startedAlready && notEndedYet;
     }
 
     private void saveOutboxEvent(UUID aggregateId, String eventType, Object payload) {

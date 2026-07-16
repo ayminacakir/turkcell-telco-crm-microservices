@@ -4,6 +4,7 @@ import com.turkcell.product_catalog_service.domain.entity.Tariff;
 import com.turkcell.product_catalog_service.domain.entity.TariffVersion;
 import com.turkcell.product_catalog_service.domain.enums.TariffStatus;
 import com.turkcell.product_catalog_service.domain.enums.TariffType;
+import com.turkcell.product_catalog_service.dto.PageResponse;
 import com.turkcell.product_catalog_service.dto.TariffCreateRequest;
 import com.turkcell.product_catalog_service.dto.TariffResponse;
 import com.turkcell.product_catalog_service.exception.DuplicateCodeException;
@@ -19,6 +20,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -120,47 +124,34 @@ class TariffServiceImplTest {
     }
 
     @Test
-    void getActive_shouldReturnOnlyActiveTariffs() {
-        when(tariffRepository.findByStatus(TariffStatus.ACTIVE)).thenReturn(List.of(sampleTariff));
+    void getActive_shouldQueryValidTariffsForTodayAndMapToPageResponse() {
+        // Tarih araligi filtresi artik DB sorgusunda (findValidOn JPQL) yapiliyor;
+        // unit test delegasyonu ve mapping'i dogrular.
+        Pageable pageable = PageRequest.of(0, 20);
+        when(tariffRepository.findValidOn(eq(TariffStatus.ACTIVE), eq(LocalDate.now()), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of(sampleTariff), pageable, 1));
 
-        List<TariffResponse> result = tariffService.getActive();
+        PageResponse<TariffResponse> result = tariffService.getActive(pageable);
 
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).status()).isEqualTo(TariffStatus.ACTIVE);
-        verify(tariffRepository).findByStatus(TariffStatus.ACTIVE);
-        verify(tariffRepository, never()).findAll();
+        assertThat(result.content()).hasSize(1);
+        assertThat(result.content().get(0).status()).isEqualTo(TariffStatus.ACTIVE);
+        assertThat(result.totalElements()).isEqualTo(1);
+        verify(tariffRepository, never()).findAll(any(Pageable.class));
     }
 
     @Test
-    void getActive_shouldExcludeTariff_whenEffectiveFromIsInTheFuture() {
-        sampleTariff.setEffectiveFrom(LocalDate.now().plusDays(30));
-        when(tariffRepository.findByStatus(TariffStatus.ACTIVE)).thenReturn(List.of(sampleTariff));
+    void getAll_shouldReturnPagedResponse() {
+        Pageable pageable = PageRequest.of(1, 5);
+        when(tariffRepository.findAll(pageable))
+                .thenReturn(new PageImpl<>(List.of(sampleTariff), pageable, 6));
 
-        List<TariffResponse> result = tariffService.getActive();
+        PageResponse<TariffResponse> result = tariffService.getAll(pageable);
 
-        assertThat(result).isEmpty();
-    }
-
-    @Test
-    void getActive_shouldExcludeTariff_whenEffectiveToIsInThePast() {
-        sampleTariff.setEffectiveFrom(LocalDate.now().minusDays(60));
-        sampleTariff.setEffectiveTo(LocalDate.now().minusDays(1));
-        when(tariffRepository.findByStatus(TariffStatus.ACTIVE)).thenReturn(List.of(sampleTariff));
-
-        List<TariffResponse> result = tariffService.getActive();
-
-        assertThat(result).isEmpty();
-    }
-
-    @Test
-    void getActive_shouldIncludeTariff_whenEffectiveToIsNull() {
-        sampleTariff.setEffectiveFrom(LocalDate.now().minusDays(1));
-        sampleTariff.setEffectiveTo(null);
-        when(tariffRepository.findByStatus(TariffStatus.ACTIVE)).thenReturn(List.of(sampleTariff));
-
-        List<TariffResponse> result = tariffService.getActive();
-
-        assertThat(result).hasSize(1);
+        assertThat(result.content()).hasSize(1);
+        assertThat(result.page()).isEqualTo(1);
+        assertThat(result.size()).isEqualTo(5);
+        assertThat(result.totalElements()).isEqualTo(6);
+        assertThat(result.totalPages()).isEqualTo(2);
     }
 
     @Test

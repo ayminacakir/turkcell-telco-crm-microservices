@@ -1,7 +1,9 @@
 package com.turkcell.product_catalog_service.service;
 
+import com.turkcell.product_catalog_service.dto.PageResponse;
 import com.turkcell.product_catalog_service.dto.TariffCreateRequest;
 import com.turkcell.product_catalog_service.dto.TariffResponse;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -11,9 +13,9 @@ public interface TariffService {
 
     TariffResponse getByCode(String code);
 
-    List<TariffResponse> getAll();
+    PageResponse<TariffResponse> getAll(Pageable pageable);
 
-    List<TariffResponse> getActive();
+    PageResponse<TariffResponse> getActive(Pageable pageable);
 
     TariffResponse updatePrice(String code, java.math.BigDecimal newMonthlyFee);
 
