@@ -1,5 +1,10 @@
 package com.turkcell.product_catalog_service.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.turkcell.product_catalog_service.dto.TariffResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.Cache;
@@ -9,7 +14,7 @@ import org.springframework.cache.interceptor.CacheErrorHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
-import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 
 import java.time.Duration;
@@ -31,11 +36,21 @@ public class CacheConfig implements CachingConfigurer {
 
     @Bean
     public RedisCacheConfiguration cacheConfiguration() {
+        // Cache'te yalnizca TariffResponse tutuldugu icin tipe bagli serializer kullanilir.
+        // JavaTimeModule sart: TariffResponse'taki LocalDate alanlari (effectiveFrom/To)
+        // varsayilan ObjectMapper ile serialize edilemez ve cache sessizce devre disi kalir.
+        ObjectMapper mapper = JsonMapper.builder()
+                .addModule(new JavaTimeModule())
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                .build();
+        Jackson2JsonRedisSerializer<TariffResponse> serializer =
+                new Jackson2JsonRedisSerializer<>(mapper, TariffResponse.class);
+
         return RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofMinutes(10))
                 .disableCachingNullValues()
                 .serializeValuesWith(RedisSerializationContext.SerializationPair
-                        .fromSerializer(new GenericJackson2JsonRedisSerializer()));
+                        .fromSerializer(serializer));
     }
 
     @Override
