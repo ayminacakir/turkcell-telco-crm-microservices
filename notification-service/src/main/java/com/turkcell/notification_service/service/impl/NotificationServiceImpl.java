@@ -6,6 +6,7 @@ import com.turkcell.notification_service.domain.entity.Notification;
 import com.turkcell.notification_service.domain.entity.NotificationTemplate;
 import com.turkcell.notification_service.domain.enums.NotificationStatus;
 import com.turkcell.notification_service.dto.NotificationResponse;
+import com.turkcell.notification_service.dto.PageResponse;
 import com.turkcell.notification_service.dto.SendNotificationRequest;
 import com.turkcell.notification_service.exception.ResourceNotFoundException;
 import com.turkcell.notification_service.outbox.entity.OutboxEvent;
@@ -18,11 +19,11 @@ import com.turkcell.notification_service.repository.NotificationTemplateReposito
 import com.turkcell.notification_service.service.NotificationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -107,8 +108,8 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<NotificationResponse> getByUserId(UUID userId) {
-        return notificationRepository.findByUserId(userId).stream().map(this::toResponse).toList();
+    public PageResponse<NotificationResponse> getByUserId(UUID userId, Pageable pageable) {
+        return PageResponse.of(notificationRepository.findByUserId(userId, pageable).map(this::toResponse));
     }
 
     private String render(String bodyTemplate, Map<String, String> placeholders) {
