@@ -16,4 +16,7 @@ public interface TariffService {
     List<TariffResponse> getActive();
 
     TariffResponse updatePrice(String code, java.math.BigDecimal newMonthlyFee);
+
+    /** FR-08: Bir tarifenin arsivlenmis eski versiyonlarini (en yeniden eskiye) doner. */
+    List<TariffResponse> getVersions(String code);
 }

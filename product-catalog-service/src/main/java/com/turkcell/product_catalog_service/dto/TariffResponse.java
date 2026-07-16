@@ -23,6 +23,8 @@ public record TariffResponse(
         Integer dataMbIncluded,
         TariffStatus status,
         LocalDate effectiveFrom,
-        LocalDate effectiveTo
+        LocalDate effectiveTo,
+        String targetSegment,
+        int version
 ) {
 }

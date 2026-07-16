@@ -32,6 +32,12 @@ public class TariffController {
         return ResponseEntity.ok(tariffService.getByCode(code));
     }
 
+    /** FR-08: Tarifenin arsivlenmis eski versiyonlari (en yeniden eskiye). */
+    @GetMapping("/{code}/versions")
+    public ResponseEntity<List<TariffResponse>> getVersions(@PathVariable String code) {
+        return ResponseEntity.ok(tariffService.getVersions(code));
+    }
+
     @PatchMapping("/{code}/price")
     public ResponseEntity<TariffResponse> updatePrice(
             @PathVariable String code,

@@ -6,20 +6,31 @@ import jakarta.persistence.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
+/**
+ * FR-08: Tarife degisikliklerinde tarifenin ONCEKI halinin snapshot'i.
+ * Eski abonelerin bagli oldugu tarife kosullari bu tablo uzerinden korunur;
+ * tariffs tablosundaki satir her zaman guncel (son) versiyonu temsil eder.
+ */
 @Entity
-@Table(name = "tariffs", schema = "product_catalog_service")
-public class Tariff {
+@Table(name = "tariff_versions", schema = "product_catalog_service",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"tariff_id", "version"}))
+public class TariffVersion {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id", updatable = false, nullable = false)
     private UUID id;
 
-    @Column(name = "code", nullable = false, unique = true, length = 50)
+    @Column(name = "tariff_id", nullable = false)
+    private UUID tariffId;
+
+    @Column(name = "version", nullable = false)
+    private int version;
+
+    @Column(name = "code", nullable = false, length = 50)
     private String code;
 
     @Column(name = "name", nullable = false)
@@ -51,21 +62,41 @@ public class Tariff {
     @Column(name = "effective_to")
     private LocalDate effectiveTo;
 
-    // FR-06: her urunun hedef segmenti vardir (orn. YOUTH, CORPORATE, GENERAL).
     @Column(name = "target_segment", length = 50)
     private String targetSegment;
 
-    // FR-08: her degisiklikte artar; onceki hal tariff_versions tablosuna snapshot'lanir.
-    @Column(name = "version", nullable = false)
-    private int version = 1;
+    @Column(name = "archived_at", nullable = false)
+    private LocalDateTime archivedAt;
 
-    @OneToMany(mappedBy = "tariff", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<TariffAddon> tariffAddons = new ArrayList<>();
+    public TariffVersion() {}
 
-    public Tariff() {}
+    /** Verilen tarifenin su anki halinden bir snapshot olusturur. */
+    public static TariffVersion snapshotOf(Tariff tariff) {
+        TariffVersion v = new TariffVersion();
+        v.tariffId = tariff.getId();
+        v.version = tariff.getVersion();
+        v.code = tariff.getCode();
+        v.name = tariff.getName();
+        v.type = tariff.getType();
+        v.monthlyFee = tariff.getMonthlyFee();
+        v.minutesIncluded = tariff.getMinutesIncluded();
+        v.smsIncluded = tariff.getSmsIncluded();
+        v.dataMbIncluded = tariff.getDataMbIncluded();
+        v.status = tariff.getStatus();
+        v.effectiveFrom = tariff.getEffectiveFrom();
+        v.effectiveTo = tariff.getEffectiveTo();
+        v.targetSegment = tariff.getTargetSegment();
+        v.archivedAt = LocalDateTime.now();
+        return v;
+    }
 
     public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
+
+    public UUID getTariffId() { return tariffId; }
+    public void setTariffId(UUID tariffId) { this.tariffId = tariffId; }
+
+    public int getVersion() { return version; }
+    public void setVersion(int version) { this.version = version; }
 
     public String getCode() { return code; }
     public void setCode(String code) { this.code = code; }
@@ -100,9 +131,6 @@ public class Tariff {
     public String getTargetSegment() { return targetSegment; }
     public void setTargetSegment(String targetSegment) { this.targetSegment = targetSegment; }
 
-    public int getVersion() { return version; }
-    public void setVersion(int version) { this.version = version; }
-
-    public List<TariffAddon> getTariffAddons() { return tariffAddons; }
-    public void setTariffAddons(List<TariffAddon> tariffAddons) { this.tariffAddons = tariffAddons; }
+    public LocalDateTime getArchivedAt() { return archivedAt; }
+    public void setArchivedAt(LocalDateTime archivedAt) { this.archivedAt = archivedAt; }
 }
