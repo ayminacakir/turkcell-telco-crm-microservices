@@ -25,6 +25,8 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -42,6 +44,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+// BeforeEach'teki ortak stub'lar her test metodunda kullanilmiyor;
+// Mockito strict-stubs bunu hata sayip CI'yi kiriyordu (UnnecessaryStubbing).
+@MockitoSettings(strictness = Strictness.LENIENT)
 class PaymentServiceImplTest {
 
     @Mock
