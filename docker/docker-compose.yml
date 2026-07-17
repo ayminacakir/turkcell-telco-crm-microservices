@@ -50,12 +50,16 @@ services:
     image: quay.io/keycloak/keycloak:26.1
     container_name: keycloak
     restart: unless-stopped
-    command: start-dev
+    command: start-dev --import-realm
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
       KC_HOSTNAME_STRICT: "false"
       KC_HTTP_ENABLED: "true"
+    volumes:
+      # telco-crm realm'i (ADMIN/USER rolleri, demo kullanicilar, telcox-web client)
+      # ilk acilista otomatik import edilir. Kullanicilar: elif.aydin / ops (sifre: telcox123)
+      - ./keycloak:/opt/keycloak/data/import
     ports:
       - "8085:8080"
     networks:

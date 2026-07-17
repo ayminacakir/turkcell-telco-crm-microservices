@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TelcoX | Müşteri Portalı</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:oklch(24% 0.05 262); --ink:oklch(22% 0.02 265); --ink-soft:oklch(45% 0.02 265);
+    --line:oklch(90% 0.006 265); --bg:oklch(97.5% 0.004 265);
+    --primary:#0057FF; --primary-dark:#0041BF; --primary-soft:#E8F0FF;
+    --accent:#00B8FF; --good:#1DB954; --good-soft:#E3F7EA;
+    --warn:#B75E00; --warn-soft:#FFF1DC; --crit:#C22F2F; --crit-soft:#FBE7E7;
+  }
+  *{box-sizing:border-box;} body{margin:0;font-family:'Public Sans',sans-serif;color:var(--ink);background:var(--bg);}
+  h1,h2,h3,.brand{font-family:'Sora',sans-serif;}
+  .top{background:white;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;padding:14px 28px;position:sticky;top:0;z-index:5;}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px;}
+  .brand .dot{width:11px;height:11px;border-radius:4px;background:var(--accent);}
+  .userchip{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:13.5px;}
+  .userchip .msisdn{font-weight:600;background:var(--bg);border:1px solid var(--line);padding:5px 12px;border-radius:999px;}
+  .btn-ghost{border:1px solid var(--line);background:white;border-radius:9px;padding:7px 13px;font:inherit;font-size:13px;font-weight:600;color:var(--ink-soft);cursor:pointer;}
+  .btn-ghost:hover{border-color:var(--primary);color:var(--primary);}
+  .wrap{max-width:1080px;margin:0 auto;padding:26px 24px 70px;}
+
+  .hero{background:linear-gradient(155deg,#0A1128,#101B3E 55%,#0B2C6B);color:white;border-radius:18px;padding:28px 32px;margin-bottom:26px;}
+  .hero-grid{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:start;}
+  .hero .greet{font-size:13.5px;opacity:.75;}
+  .hero h1{font-size:26px;margin:4px 0 4px;font-weight:800;}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+  .chip{font-size:11px;font-weight:700;letter-spacing:.05em;padding:4px 11px;border-radius:999px;background:rgba(255,255,255,.13);}
+  .price{text-align:right;} .price .amount{font-family:'Sora',sans-serif;font-size:26px;font-weight:800;color:var(--accent);}
+  .price .cycle{font-size:12px;opacity:.7;}
+  .quota-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:20px;margin-top:24px;}
+  .q-head{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:7px;}
+  .bar{height:8px;border-radius:999px;background:rgba(255,255,255,.16);position:relative;overflow:hidden;}
+  .bar .fill{position:absolute;inset:0 auto 0 0;border-radius:999px;background:#5AD8C8;}
+  .bar .fill.warn{background:#F0B35C;} .bar .fill.crit{background:#F07C7C;}
+  .bar .mark{position:absolute;top:-2px;bottom:-2px;left:80%;width:2px;background:rgba(255,255,255,.5);}
+  .q-note{font-size:11.5px;opacity:.7;margin-top:6px;} .q-note.warned{color:#F0B35C;opacity:1;}
+
+  .cols{display:grid;grid-template-columns:1.15fr .85fr;gap:22px;align-items:start;}
+  @media(max-width:860px){.cols{grid-template-columns:1fr;}.hero-grid{grid-template-columns:1fr;}.price{text-align:left;}}
+  .eyebrow{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin:26px 0 10px;}
+  .card{background:white;border:1px solid var(--line);border-radius:14px;overflow:hidden;}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  th,td{text-align:left;padding:11px 16px;border-top:1px solid var(--line);}
+  thead th{border-top:none;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft);background:var(--bg);padding:9px 16px;}
+  td.num{text-align:right;font-variant-numeric:tabular-nums;}
+  .pill{font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;white-space:nowrap;}
+  .pill.ok{background:var(--good-soft);color:var(--good);} .pill.warn{background:var(--warn-soft);color:var(--warn);}
+  .pill.crit{background:var(--crit-soft);color:var(--crit);} .pill.info{background:var(--primary-soft);color:var(--primary-dark);}
+  .list{list-style:none;margin:0;padding:0;}
+  .list li{display:flex;align-items:baseline;gap:10px;padding:12px 16px;border-top:1px solid var(--line);}
+  .list li:first-child{border-top:none;}
+  .list .when{margin-left:auto;font-size:12px;color:var(--ink-soft);white-space:nowrap;}
+  .list .body{font-size:13.5px;} .list .body small{display:block;color:var(--ink-soft);font-size:12px;margin-top:2px;}
+  .empty{padding:20px 16px;font-size:13px;color:var(--ink-soft);}
+  .err{padding:14px 16px;font-size:12.5px;color:var(--crit);background:var(--crit-soft);}
+
+  .newticket{padding:16px;display:grid;gap:10px;border-top:1px solid var(--line);background:var(--bg);}
+  .newticket .row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  select,input[type=text],textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:9px;font:inherit;font-size:13px;background:white;}
+  textarea{resize:vertical;min-height:52px;}
+  .btn{padding:10px 16px;border:none;border-radius:9px;background:var(--primary);color:white;font-family:'Sora',sans-serif;font-weight:700;font-size:13px;cursor:pointer;justify-self:start;}
+  .btn:hover{background:var(--primary-dark);}
+  .prefs{padding:6px 16px 14px;}
+  .pref-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--line);}
+  .pref-row:first-child{border-top:none;}
+  .pref-row .name{font-weight:600;font-size:13.5px;} .pref-row .desc{font-size:12px;color:var(--ink-soft);}
+  .switch{margin-left:auto;width:40px;height:22px;border-radius:999px;background:var(--primary);position:relative;flex:none;cursor:pointer;border:none;}
+  .switch::after{content:'';position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:white;}
+  .switch.off{background:var(--line);} .switch.off::after{right:auto;left:2px;}
+</style>
+</head>
+<body>
+  <header class="top">
+    <div class="brand"><span class="dot"></span>TelcoX</div>
+    <div class="userchip">
+      <span id="u-name">—</span>
+      <span class="msisdn" id="u-msisdn">—</span>
+      <button class="btn-ghost" onclick="telcoxLogout()">Çıkış</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <section class="hero">
+      <div class="hero-grid">
+        <div>
+          <div class="greet" id="greet">Merhaba 👋</div>
+          <h1 id="plan-name">Tarife yükleniyor…</h1>
+          <div class="chips" id="plan-chips"></div>
+        </div>
+        <div class="price">
+          <div class="amount" id="plan-fee">—</div>
+          <div class="cycle" id="plan-cycle">aylık</div>
+        </div>
+      </div>
+      <div class="quota-row" id="quota-row"><div class="q-note">Kota bilgisi yükleniyor…</div></div>
+    </section>
+
+    <div class="cols">
+      <div>
+        <p class="eyebrow">Faturalarım</p>
+        <div class="card"><div id="invoices" class="empty">Yükleniyor…</div></div>
+
+        <p class="eyebrow">Destek Taleplerim</p>
+        <div class="card">
+          <div id="tickets" class="empty">Yükleniyor…</div>
+          <form class="newticket" id="ticket-form">
+            <div class="row">
+              <select id="t-cat"><option>BILLING</option><option>NETWORK</option><option>GENERAL</option></select>
+              <select id="t-pri"><option>LOW</option><option selected>MEDIUM</option><option>HIGH</option><option>CRITICAL</option></select>
+            </div>
+            <textarea id="t-desc" placeholder="Sorununuzu kısaca anlatın…" required></textarea>
+            <button class="btn" type="submit">Talep Aç</button>
+          </form>
+        </div>
+      </div>
+
+      <div>
+        <p class="eyebrow">Bildirimlerim</p>
+        <div class="card"><div id="notifs" class="empty">Yükleniyor…</div></div>
+
+        <p class="eyebrow">İletişim Tercihlerim</p>
+        <div class="card">
+          <div class="prefs" id="prefs"><div class="empty">Yükleniyor…</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script src="telcox-shared.js"></script>
+<script>
+const S = telcoxGuard('customer');
+if (S) init();
+
+const TPL_TR = {
+  QUOTA_WARNING_80:'Paket kullanımınız %80 seviyesine ulaştı', QUOTA_EXCEEDED:'Paket kotanız doldu — ek paket önerisi',
+  INVOICE_GENERATED:'Faturanız oluşturuldu', PAYMENT_RECEIVED:'Ödemeniz alındı', PAYMENT_FAILED:'Ödemeniz alınamadı',
+  WELCOME_SMS:'Hoş geldiniz! Hattınız aktif', CUSTOMER_WELCOME:'TelcoX ailesine hoş geldiniz',
+  TICKET_OPENED:'Destek talebiniz alındı', TICKET_RESOLVED:'Destek talebiniz çözüldü',
+};
+const ST_TR = { PENDING:['BEKLİYOR','warn'], PAID:['ÖDENDİ','ok'], OVERDUE:['GECİKMİŞ','crit'],
+  OPEN:['AÇIK','info'], IN_PROGRESS:['İŞLEMDE','info'], RESOLVED:['ÇÖZÜLDÜ','ok'], CLOSED:['KAPALI','warn'],
+  SENT:['GÖNDERİLDİ','ok'], SKIPPED:['TERCİH KAPALI','warn'] };
+const pill = (st) => { const [t,c] = ST_TR[st] || [st,'info']; return `<span class="pill ${c}">${t}</span>`; };
+const fail = (el,r) => el.innerHTML = `<div class="err">Yüklenemedi (${r.status||'ağ'}): ${esc(typeof r.data==='object'?(r.data?.detail||r.data?.error||''):r.data).slice(0,120)}</div>`;
+
+async function init(){
+  document.getElementById('u-name').textContent = S.name;
+  document.getElementById('u-msisdn').textContent = S.msisdn || '';
+  document.getElementById('greet').textContent = `Merhaba ${S.name.split(' ')[0]} 👋`;
+  loadPlanAndQuota(); loadInvoices(); loadTickets(); loadNotifs(); loadPrefs();
+}
+
+let TARIFF = null;
+async function loadPlanAndQuota(){
+  const subs = await api(`/api/v1/subscriptions/customers/${S.customerId}`);
+  const sub = asList(subs.data)[0];
+  if (!subs.ok || !sub) { document.getElementById('plan-name').textContent = 'Abonelik bulunamadı'; return; }
+  const t = await api(`/api/v1/tariffs/${sub.tariffCode}`);
+  TARIFF = t.ok ? t.data : null;
+  document.getElementById('plan-name').textContent = TARIFF?.name || sub.tariffCode;
+  document.getElementById('plan-fee').textContent = fmtTL(TARIFF?.monthlyFee);
+  document.getElementById('plan-chips').innerHTML =
+    `<span class="chip">${esc(TARIFF?.type||'')}</span>` +
+    (TARIFF?.targetSegment ? `<span class="chip">${esc(TARIFF.targetSegment)} segmenti</span>` : '') +
+    (TARIFF?.version>1 ? `<span class="chip">v${TARIFF.version} — güncellendi</span>` : '') +
+    `<span class="chip">${esc(sub.status)}</span>`;
+
+  const q = await api(`/api/v1/usage/subscriptions/${sub.id}/quota`);
+  const row = document.getElementById('quota-row');
+  if (!q.ok) { row.innerHTML = `<div class="q-note">Kota bilgisi alınamadı (usage-service: ${q.status})</div>`; return; }
+  const Q = q.data, tot = { mb:TARIFF?.dataMbIncluded||1, min:TARIFF?.minutesIncluded||1, sms:TARIFF?.smsIncluded||1 };
+  const meter = (label, rem, total, unitFn) => {
+    const used = Math.max(0, Math.min(100, Math.round(100*(1-rem/total))));
+    const cls = used>=100?'crit':used>=80?'warn':'';
+    const warned = used>=80 ? `<div class="q-note warned">%80 eşiği aşıldı — uyarı SMS'i gönderildi</div>` : `<div class="q-note">Dönem sonu: ${fmtDate(Q.periodEnd)}</div>`;
+    return `<div><div class="q-head"><b>${label}</b><span>${unitFn(rem)} / ${unitFn(total)} kaldı</span></div>
+      <div class="bar"><div class="fill ${cls}" style="width:${used}%"></div><div class="mark"></div></div>${warned}</div>`;
+  };
+  row.innerHTML =
+    meter('İnternet', Q.mbRemaining, tot.mb, v => v>=1024 ? (v/1024).toFixed(1)+' GB' : v+' MB') +
+    meter('Dakika', Q.minutesRemaining, tot.min, v => v+' dk') +
+    meter('SMS', Q.smsRemaining, tot.sms, v => v);
+}
+
+async function loadInvoices(){
+  const el = document.getElementById('invoices');
+  const r = await api(`/api/v1/invoices/customer/${S.customerId}`);
+  if (!r.ok) return fail(el, r);
+  const rows = asList(r.data);
+  if (!rows.length) return el.innerHTML = '<div class="empty">Henüz faturanız yok.</div>';
+  el.outerHTML = `<table><thead><tr><th>Dönem</th><th style="text-align:right">Tutar</th><th>Son Ödeme</th><th>Durum</th></tr></thead><tbody>` +
+    rows.map(i => `<tr><td>${fmtDate(i.periodStart)} – ${fmtDate(i.periodEnd)}</td><td class="num">${fmtTL(i.grandTotal)}</td><td>${fmtDate(i.dueDate)}</td><td>${pill(i.status)}</td></tr>`).join('') +
+    `</tbody></table>`;
+}
+
+async function loadTickets(){
+  const el = document.getElementById('tickets');
+  const r = await api(`/api/v1/tickets?customerId=${S.customerId}&size=10`);
+  if (!r.ok) return fail(el, r);
+  const rows = asList(r.data);
+  el.innerHTML = rows.length
+    ? `<ul class="list">` + rows.map(t => `<li>${pill(t.status)}<span class="body">${esc(t.category)} · ${esc(t.priority)}<small>${t.assignedTeam?esc(t.assignedTeam)+' · ':''}SLA: ${fmtDT(t.slaDueAt)}</small></span><span class="when">${fmtDT(t.createdAt)}</span></li>`).join('') + `</ul>`
+    : '<div class="empty">Açık destek talebiniz yok.</div>';
+}
+document.getElementById('ticket-form').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const r = await api('/api/v1/tickets', { method:'POST', body: JSON.stringify({
+    customerId: S.customerId, category: document.getElementById('t-cat').value,
+    priority: document.getElementById('t-pri').value, description: document.getElementById('t-desc').value })});
+  if (r.ok) { document.getElementById('t-desc').value=''; loadTickets(); }
+  else alert('Talep açılamadı: ' + (r.data?.detail || r.status));
+});
+
+async function loadNotifs(){
+  const el = document.getElementById('notifs');
+  const r = await api(`/api/v1/notifications?userId=${S.customerId}&size=8`);
+  if (!r.ok) return fail(el, r);
+  const rows = asList(r.data);
+  el.innerHTML = rows.length
+    ? `<ul class="list">` + rows.map(n => `<li><span class="pill ${n.channel==='EMAIL'?'info':'ok'}">${esc(n.channel)}</span><span class="body">${esc(TPL_TR[n.templateCode]||n.templateCode)}${n.status==='SKIPPED'?'<small>tercih kapalı olduğu için gönderilmedi</small>':''}</span><span class="when">${fmtDT(n.sentAt)}</span></li>`).join('') + `</ul>`
+    : '<div class="empty">Bildiriminiz yok.</div>';
+}
+
+const PREF_META = { SMS:'Kota uyarıları, ödeme ve talep bildirimleri', EMAIL:'Fatura ve dönem özetleri', PUSH:'Uygulama bildirimleri' };
+async function loadPrefs(){
+  const el = document.getElementById('prefs');
+  const r = await api(`/api/v1/notifications/preferences/${S.customerId}`);
+  if (!r.ok) return fail(el, r);
+  const map = {}; asList(r.data).forEach(p => map[p.channel] = p.optedOut);
+  el.innerHTML = Object.keys(PREF_META).map(ch => {
+    const off = map[ch] === true;
+    return `<div class="pref-row"><div><div class="name">${ch}</div><div class="desc">${PREF_META[ch]}</div></div>
+      <button class="switch ${off?'off':''}" data-ch="${ch}" data-off="${off}" role="switch" aria-checked="${!off}" aria-label="${ch} bildirimleri"></button></div>`;
+  }).join('');
+  el.querySelectorAll('.switch').forEach(sw => sw.addEventListener('click', async ()=>{
+    const ch = sw.dataset.ch, newOff = sw.dataset.off !== 'true';
+    const r2 = await api(`/api/v1/notifications/preferences/${S.customerId}`, { method:'PUT', body: JSON.stringify({channel:ch, optedOut:newOff})});
+    if (r2.ok) loadPrefs(); else alert('Tercih güncellenemedi: ' + r2.status);
+  }));
+}
+</script>
+</body>
+</html>

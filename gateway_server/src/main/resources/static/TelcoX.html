@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TelcoX | Giriş</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy: oklch(24% 0.05 262);
+    --navy-2: oklch(30% 0.06 262);
+    --ink: oklch(22% 0.02 265);
+    --ink-soft: oklch(45% 0.02 265);
+    --line: oklch(90% 0.006 265);
+    --primary: #0057FF;
+    --primary-dark: #0041BF;
+    --primary-soft: #E8F0FF;
+    --accent: #00B8FF;
+    --good: #1DB954;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Public Sans',sans-serif;color:var(--ink);min-height:100vh;display:grid;grid-template-columns:1fr 480px;background:white;}
+  h1,h2,.brand{font-family:'Sora',sans-serif;}
+  a{color:var(--primary);}a:hover{color:var(--primary-dark);}
+
+  .hero{background:linear-gradient(155deg, #0A1128, #101B3E 55%, #0B2C6B);color:white;padding:64px 72px;display:flex;flex-direction:column;position:relative;overflow:hidden;}
+  #net-canvas{position:absolute;inset:0;width:100%;height:100%;}
+  .hero > *{position:relative;z-index:1;}
+  .brand{display:flex;align-items:center;gap:12px;font-weight:800;font-size:24px;}
+  .brand .dot{width:12px;height:12px;border-radius:4px;background:var(--accent);}
+  .hero h1{font-size:44px;line-height:1.15;margin:auto 0 16px;max-width:480px;font-weight:800;text-wrap:pretty;}
+  .hero p.lead{font-size:16.5px;line-height:1.6;color:oklch(85% 0.01 262);max-width:440px;margin:0 0 40px;}
+  .hero-stats{display:flex;gap:40px;position:relative;z-index:1;}
+  .hero-stat .v{font-family:'Sora',sans-serif;font-size:24px;font-weight:700;color:var(--accent);}
+  .hero-stat .l{font-size:12.5px;color:oklch(75% 0.01 262);margin-top:4px;}
+
+  .panel{padding:64px 56px;display:flex;flex-direction:column;justify-content:center;border-left:1px solid var(--line);}
+  .panel h2{font-size:24px;margin:0 0 6px;}
+  .panel .sub{color:var(--ink-soft);font-size:14px;margin:0 0 28px;}
+  .role-tabs{display:flex;gap:0;border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:26px;background:oklch(97.5% 0.004 265);}
+  .role-tab{flex:1;padding:11px;border:none;border-radius:9px;background:none;font-family:'Sora',sans-serif;font-weight:600;font-size:13.5px;color:var(--ink-soft);cursor:pointer;}
+  .role-tab.active{background:white;color:var(--ink);box-shadow:0 2px 8px -2px oklch(30% 0.05 265 / 20%);}
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:6px;}
+  .field input{width:100%;padding:13px 14px;border-radius:10px;border:1px solid var(--line);font-family:inherit;font-size:14.5px;background:white;}
+  .field input:focus{outline:2px solid var(--primary);outline-offset:1px;}
+  .row-between{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;font-size:13px;}
+  .row-between label{display:flex;align-items:center;gap:7px;color:var(--ink-soft);}
+  .btn-login{width:100%;padding:14px;border-radius:11px;border:none;background:var(--primary);color:white;font-family:'Sora',sans-serif;font-weight:700;font-size:15px;cursor:pointer;}
+  .btn-login:hover{background:var(--primary-dark);}
+  .sso-divider{display:flex;align-items:center;gap:12px;margin:22px 0 14px;color:var(--ink-soft);font-size:12px;}
+  .sso-divider::before,.sso-divider::after{content:'';flex:1;height:1px;background:var(--line);}
+  .sso-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+  .sso-btn{padding:10px 4px;border-radius:9px;border:1px solid var(--line);background:white;font-family:inherit;font-size:12px;font-weight:600;color:var(--ink-soft);cursor:pointer;}
+  .sso-btn:hover{border-color:var(--primary);color:var(--primary);}
+  .demo-note{margin-top:22px;padding:14px 16px;border-radius:11px;background:var(--primary-soft);font-size:12.5px;line-height:1.6;color:var(--primary-dark);}
+  .demo-note b{font-weight:700;}
+
+  @media (max-width:980px){
+    body{grid-template-columns:1fr;}
+    .hero{display:none;}
+    .panel{max-width:520px;margin:0 auto;border:none;}
+  }
+</style>
+</head>
+<body>
+  <aside class="hero">
+    <canvas id="net-canvas"></canvas>
+    <div class="brand"><span class="dot"></span>TelcoX</div>
+    <h1>Türkiye'nin dijital operatör deneyimi</h1>
+    <p class="lead">Tarifeni yönet, faturalarını öde, kullanımını anlık takip et. Operasyon ekipleri için uçtan uca servis görünürlüğü.</p>
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="v">128K+</div><div class="l">Aktif abone</div></div>
+      <div class="hero-stat"><div class="v">%99,9</div><div class="l">Servis erişilebilirliği</div></div>
+      <div class="hero-stat"><div class="v">7/24</div><div class="l">Canlı destek</div></div>
+    </div>
+  </aside>
+
+  <main class="panel">
+    <h2 id="panel-title">Müşteri Girişi</h2>
+    <p class="sub" id="panel-sub">Online işlemler için hesabına giriş yap.</p>
+    <div class="role-tabs">
+      <button class="role-tab active" data-role="customer">Müşteri</button>
+      <button class="role-tab" data-role="admin">Yönetici (Operasyon)</button>
+    </div>
+    <form id="login-form">
+      <div class="field"><label id="user-label">MSISDN / E-posta</label><input type="text" id="login-user" value="0532 417 47 12" required></div>
+      <div class="field"><label>Şifre</label><input type="password" id="login-pass" value="telcox123" required></div>
+      <div class="row-between">
+        <label><input type="checkbox" checked> Beni hatırla</label>
+        <a href="#" style="font-weight:600;text-decoration:none;">Şifremi unuttum</a>
+      </div>
+      <button type="submit" class="btn-login" id="login-btn">Giriş Yap</button>
+    </form>
+    <div class="sso-divider">veya şununla devam et</div>
+    <div class="sso-row">
+      <button class="sso-btn" type="button">Google</button>
+      <button class="sso-btn" type="button">Microsoft</button>
+      <button class="sso-btn" type="button">LDAP</button>
+      <button class="sso-btn" type="button">Keycloak</button>
+    </div>
+    <div class="demo-note" id="demo-note"><b>Demo hesapları</b> (şifre: <b>telcox123</b>) — Müşteri: <b>elif.aydin</b> · Yönetici: <b>ops</b>. Kimlik doğrulama gerçek Keycloak (realm: telco-crm) üzerinden yapılır.</div>
+  </main>
+
+<script src="telcox-shared.js"></script>
+<script>
+  // animated network nodes (fiber/5G feel)
+  const cv=document.getElementById('net-canvas'), cx=cv.getContext('2d');
+  let W,H,nodes=[];
+  function resize(){ W=cv.width=cv.offsetWidth; H=cv.height=cv.offsetHeight; }
+  resize(); window.addEventListener('resize',resize);
+  for(let i=0;i<46;i++) nodes.push({x:Math.random(),y:Math.random(),vx:(Math.random()-.5)*.0007,vy:(Math.random()-.5)*.0007,r:1+Math.random()*2});
+  (function draw(){
+    cx.clearRect(0,0,W,H);
+    nodes.forEach(n=>{ n.x+=n.vx; n.y+=n.vy; if(n.x<0||n.x>1)n.vx*=-1; if(n.y<0||n.y>1)n.vy*=-1; });
+    for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){
+      const a=nodes[i],b=nodes[j],dx=(a.x-b.x)*W,dy=(a.y-b.y)*H,d=Math.hypot(dx,dy);
+      if(d<150){ cx.strokeStyle=`rgba(0,184,255,${0.16*(1-d/150)})`; cx.lineWidth=1; cx.beginPath(); cx.moveTo(a.x*W,a.y*H); cx.lineTo(b.x*W,b.y*H); cx.stroke(); }
+    }
+    nodes.forEach(n=>{ cx.fillStyle='rgba(0,184,255,.6)'; cx.beginPath(); cx.arc(n.x*W,n.y*H,n.r,0,7); cx.fill(); });
+    requestAnimationFrame(draw);
+  })();
+</script>
+<script>
+  let role = 'customer';
+  const cfg = {
+    customer: {title:'Müşteri Girişi', sub:'Online işlemler için hesabına giriş yap.', userLabel:'Kullanıcı adı', userVal:'elif.aydin', btn:'Giriş Yap', target:'Musteri Portali.html'},
+    admin: {title:'Operasyon Konsolu', sub:'Servis sağlığı, müşteri ve katalog yönetimi.', userLabel:'Kurumsal kullanıcı', userVal:'ops', btn:'Konsola Giriş', target:'Admin Paneli.html'},
+  };
+  document.querySelectorAll('.role-tab').forEach(tab=>{
+    tab.addEventListener('click', ()=>{
+      role = tab.getAttribute('data-role');
+      document.querySelectorAll('.role-tab').forEach(t=>t.classList.toggle('active', t===tab));
+      const c = cfg[role];
+      document.getElementById('panel-title').textContent = c.title;
+      document.getElementById('panel-sub').textContent = c.sub;
+      document.getElementById('user-label').textContent = c.userLabel;
+      document.getElementById('login-user').value = c.userVal;
+      document.getElementById('login-btn').textContent = c.btn;
+    });
+  });
+
+  const note = document.getElementById('demo-note');
+  document.getElementById('login-form').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const c = cfg[role];
+    const u = document.getElementById('login-user').value.trim();
+    const p = document.getElementById('login-pass').value;
+    const btn = document.getElementById('login-btn');
+    btn.disabled = true; btn.textContent = 'Doğrulanıyor…';
+
+    const r = await telcoxAuth(u, p, role);
+    if (r.ok) { window.location.href = c.target; return; }
+
+    btn.disabled = false; btn.textContent = c.btn;
+    note.innerHTML = '<b>Giriş başarısız:</b> ' + r.reason +
+      (r.offline ? ' — <a href="#" id="demo-continue">token\'sız (kısıtlı) devam et</a>' : '');
+    const dc = document.getElementById('demo-continue');
+    if (dc) dc.addEventListener('click', (ev)=>{
+      ev.preventDefault();
+      const profile = TELCOX.USERS[u] || {name:u};
+      telcoxSetState({role, username:u, name:profile.name, msisdn:profile.msisdn,
+        customerId:profile.customerId, subscriptionId:profile.subscriptionId, token:null});
+      window.location.href = c.target;
+    });
+  });
+</script>
+</body>
+</html>
