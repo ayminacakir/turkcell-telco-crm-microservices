@@ -10,6 +10,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -25,7 +26,9 @@ public class TariffController {
         this.tariffService = tariffService;
     }
 
+    /** Dokuman 8.2: POST /tariffs (admin). */
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<TariffResponse> create(@Valid @RequestBody TariffCreateRequest request) {
         TariffResponse created = tariffService.create(request);
         return ResponseEntity.created(URI.create("/api/v1/tariffs/" + created.code())).body(created);
@@ -43,6 +46,7 @@ public class TariffController {
     }
 
     @PatchMapping("/{code}/price")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<TariffResponse> updatePrice(
             @PathVariable String code,
             @RequestBody java.math.BigDecimal newMonthlyFee) {

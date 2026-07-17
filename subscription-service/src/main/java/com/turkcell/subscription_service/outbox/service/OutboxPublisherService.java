@@ -17,6 +17,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class OutboxPublisherService {
 
     private static final Logger log = LoggerFactory.getLogger(OutboxPublisherService.class);
+    /** FAILED bir event en fazla bu kadar kez yeniden denenir, sonra kalici FAILED kalir. */
+    private static final int MAX_RETRIES = 5;
+
     private final OutboxEventRepository outboxEventRepository;
     private final KafkaTemplate<String, String> kafkaTemplate;
 
@@ -30,7 +33,8 @@ public class OutboxPublisherService {
     @Scheduled(fixedDelay = 5000)
     @Transactional
     public void publishPendingEvents() {
-        List<OutboxEvent> pendingEvents = outboxEventRepository.findByStatus(OutboxStatus.PENDING);
+        List<OutboxEvent> pendingEvents = outboxEventRepository.findByStatusInAndRetryCountLessThan(
+                List.of(OutboxStatus.PENDING, OutboxStatus.FAILED), MAX_RETRIES);
 
         for (OutboxEvent event : pendingEvents) {
             String topic = resolveTopicName(event.getEventType());
@@ -46,6 +50,7 @@ public class OutboxPublisherService {
                 outboxEventRepository.save(event);
                 log.info("Published outbox event {} to topic {}", event.getId(), topic);
             } catch (ExecutionException | InterruptedException exception) {
+                event.setRetryCount(event.getRetryCount() + 1);
                 event.setStatus(OutboxStatus.FAILED);
                 outboxEventRepository.save(event);
                 log.error("Failed to publish outbox event {} to topic {}", event.getId(), topic, exception);

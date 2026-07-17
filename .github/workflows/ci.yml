@@ -1,0 +1,29 @@
+# Dokuman Bolum 11: CI/CD — GitHub Actions (build -> test)
+# Docker push ve kubectl apply adimlari registry/cluster erisimi gerektirdigi icin
+# MVP'de kapsam disi birakildi; asagiya yeni job olarak eklenebilir.
+name: CI
+
+on:
+  push:
+    branches: ["main", "Nasrulla", "aymina", "origin/merve"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kodu indir
+        uses: actions/checkout@v4
+
+      - name: JDK 21 kur
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      # *ApplicationTests (contextLoads) siniflari PostgreSQL/config-server ister;
+      # CI'da altyapi olmadigi icin haric tutulur. Unit testlerin tamami kosulur.
+      - name: Derle ve unit testleri kos
+        run: mvn -B package -Dtest='!*ApplicationTests' -Dsurefire.failIfNoSpecifiedTests=false

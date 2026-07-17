@@ -39,6 +39,10 @@ public class OutboxEvent {
 
     private LocalDateTime publishedAt;
 
+    // Kac kez publish denendigi; MAX_RETRIES asilinca event kalici FAILED kalir.
+    @Column(nullable = false)
+    private int retryCount = 0;
+
     @PrePersist
     public void prePersist() {
         if (this.status == null) {
@@ -48,4 +52,7 @@ public class OutboxEvent {
             this.createdAt = LocalDateTime.now();
         }
     }
+
+    public int getRetryCount() { return retryCount; }
+    public void setRetryCount(int retryCount) { this.retryCount = retryCount; }
 }

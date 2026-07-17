@@ -5,6 +5,7 @@ import com.turkcell.product_catalog_service.dto.AddonResponse;
 import com.turkcell.product_catalog_service.service.AddonService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -21,6 +22,7 @@ public class AddonController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<AddonResponse> create(@Valid @RequestBody AddonCreateRequest request) {
         AddonResponse created = addonService.create(request);
         return ResponseEntity.created(URI.create("/api/v1/addons/" + created.code())).body(created);
@@ -41,12 +43,14 @@ public class AddonController {
      * Bir ek paketi bir tarifeye baglar. Idempotent: iliski zaten varsa 204 doner, hata firlatmaz.
      */
     @PutMapping("/{addonCode}/tariffs/{tariffCode}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> linkToTariff(@PathVariable String addonCode, @PathVariable String tariffCode) {
         addonService.linkToTariff(tariffCode, addonCode);
         return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{addonCode}/tariffs/{tariffCode}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> unlinkFromTariff(@PathVariable String addonCode, @PathVariable String tariffCode) {
         addonService.unlinkFromTariff(tariffCode, addonCode);
         return ResponseEntity.noContent().build();

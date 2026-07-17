@@ -1,0 +1,21 @@
+# NFR (dokuman bolum 5): "Stateless servisler, K8s HPA ile auto-scale".
+# CPU %70'i asinca 4 replikaya kadar buyur. metrics-server gerektirir (README).
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: product-catalog
+  namespace: telco-crm
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: product-catalog
+  minReplicas: 1
+  maxReplicas: 4
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70

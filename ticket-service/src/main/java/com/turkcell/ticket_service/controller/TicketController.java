@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -49,6 +50,7 @@ public class TicketController {
     }
 
     @PostMapping("/{id}/assign")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<TicketResponse> assign(@PathVariable UUID id,
                                                   @Valid @RequestBody TicketAssignRequest request) {
         return ResponseEntity.ok(ticketService.assign(id, request));

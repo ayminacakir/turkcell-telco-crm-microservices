@@ -1,0 +1,32 @@
+# Lokal demo icin basit Postgres (kalici disk yok — pod silinirse veri gider).
+# Production'da yonetilen DB veya StatefulSet + PVC kullanilir.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalog-db
+  namespace: telco-crm
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: catalog-db }
+  template:
+    metadata:
+      labels: { app: catalog-db }
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:17
+          ports: [{ containerPort: 5432 }]
+          env:
+            - { name: POSTGRES_USER, value: postgres }
+            - { name: POSTGRES_PASSWORD, value: postgres }
+            - { name: POSTGRES_DB, value: product_catalog_db }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalog-db
+  namespace: telco-crm
+spec:
+  selector: { app: catalog-db }
+  ports: [{ port: 5432, targetPort: 5432 }]

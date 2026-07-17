@@ -5,6 +5,7 @@ import com.turkcell.notification_service.dto.NotificationTemplateResponse;
 import com.turkcell.notification_service.service.NotificationTemplateService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -21,6 +22,7 @@ public class NotificationTemplateController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<NotificationTemplateResponse> create(
             @Valid @RequestBody NotificationTemplateCreateRequest request) {
         NotificationTemplateResponse created = templateService.create(request);

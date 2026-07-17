@@ -1,0 +1,50 @@
+# product-catalog-service: dokumandaki K8s hedefinin ornek uygulamasi.
+# Bu servis secildi cunku: stateless, read-heavy ve Redis cache'li —
+# HPA ile yatay olceklemenin en anlamli oldugu servis (NFR: K8s HPA auto-scale).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product-catalog
+  namespace: telco-crm
+  labels: { app: product-catalog }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: product-catalog }
+  template:
+    metadata:
+      labels: { app: product-catalog }
+    spec:
+      containers:
+        - name: product-catalog
+          image: telco/product-catalog-service:local
+          imagePullPolicy: IfNotPresent   # kind load ile yuklenen lokal imaj
+          ports: [{ containerPort: 9003 }]
+          env:
+            - { name: SPRING_DATASOURCE_URL, value: "jdbc:postgresql://catalog-db:5432/product_catalog_db" }
+            - { name: SPRING_DATASOURCE_USERNAME, value: postgres }
+            - { name: SPRING_DATASOURCE_PASSWORD, value: postgres }
+            - { name: SPRING_DATA_REDIS_HOST, value: redis }
+            # Lokal demoda config-server/Kafka/Keycloak cluster'da yok:
+            - { name: SPRING_CLOUD_CONFIG_ENABLED, value: "false" }
+            - { name: SPRING_PROFILES_ACTIVE, value: "default" }
+          readinessProbe:
+            httpGet: { path: /actuator/health, port: 9003 }
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /actuator/health, port: 9003 }
+            initialDelaySeconds: 40
+            periodSeconds: 15
+          resources:
+            requests: { cpu: 250m, memory: 512Mi }
+            limits: { cpu: "1", memory: 768Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-catalog
+  namespace: telco-crm
+spec:
+  selector: { app: product-catalog }
+  ports: [{ port: 9003, targetPort: 9003 }]
