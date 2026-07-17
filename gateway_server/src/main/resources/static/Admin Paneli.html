@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TelcoX | Operasyon Konsolu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:oklch(24% 0.05 262); --ink:oklch(22% 0.02 265); --ink-soft:oklch(45% 0.02 265);
+    --line:oklch(90% 0.006 265); --bg:oklch(97.5% 0.004 265);
+    --primary:#0057FF; --primary-dark:#0041BF; --primary-soft:#E8F0FF; --accent:#00B8FF;
+    --good:#1DB954; --good-soft:#E3F7EA; --warn:#B75E00; --warn-soft:#FFF1DC;
+    --crit:#C22F2F; --crit-soft:#FBE7E7; --console:#0A1128; --console-ink:#9FD8CF;
+  }
+  *{box-sizing:border-box;} body{margin:0;font-family:'Public Sans',sans-serif;color:var(--ink);background:var(--bg);}
+  h1,h2,h3,.brand{font-family:'Sora',sans-serif;}
+  .top{background:linear-gradient(90deg,#0A1128,#101B3E);color:white;display:flex;align-items:center;gap:14px;padding:14px 28px;position:sticky;top:0;z-index:5;}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px;}
+  .brand .dot{width:11px;height:11px;border-radius:4px;background:var(--accent);}
+  .top .tag{font-size:11px;font-weight:700;letter-spacing:.07em;background:rgba(255,255,255,.12);padding:4px 11px;border-radius:999px;}
+  .userchip{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:13px;}
+  .btn-ghost{border:1px solid rgba(255,255,255,.3);background:none;border-radius:9px;padding:7px 13px;font:inherit;font-size:13px;font-weight:600;color:white;cursor:pointer;}
+  .wrap{max-width:1180px;margin:0 auto;padding:26px 24px 80px;}
+  .eyebrow{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin:26px 0 10px;}
+  .card{background:white;border:1px solid var(--line);border-radius:14px;padding:18px;}
+  .grid-health{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;}
+  .svc{background:white;border:1px solid var(--line);border-radius:12px;padding:13px 15px;display:flex;flex-direction:column;gap:6px;}
+  .svc-head{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13.5px;font-family:'Sora',sans-serif;}
+  .dot{width:9px;height:9px;border-radius:50%;flex:none;background:var(--line);}
+  .dot.up{background:var(--good);} .dot.down{background:var(--crit);} .dot.unk{background:var(--warn);}
+  .svc .meta{font-size:11.5px;color:var(--ink-soft);}
+  .pill{font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:999px;margin-left:auto;}
+  .pill.up{background:var(--good-soft);color:var(--good);} .pill.down{background:var(--crit-soft);color:var(--crit);}
+  .pill.unk{background:var(--warn-soft);color:var(--warn);}
+  .cols2{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;}
+  @media(max-width:900px){.cols2{grid-template-columns:1fr;}}
+  label{display:block;font-size:11.5px;font-weight:600;color:var(--ink-soft);margin:9px 0 4px;}
+  input,select,textarea{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:13px;background:white;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .btn{margin-top:12px;padding:9px 15px;border:none;border-radius:9px;background:var(--primary);color:white;font-family:'Sora',sans-serif;font-weight:700;font-size:12.5px;cursor:pointer;}
+  .btn:hover{background:var(--primary-dark);}
+  .btn.sec{background:white;color:var(--primary);border:1px solid var(--primary);}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:8px;}
+  th,td{text-align:left;padding:8px 10px;border-top:1px solid var(--line);}
+  thead th{border-top:none;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);}
+  td.num{text-align:right;font-variant-numeric:tabular-nums;}
+  .tbl-scroll{overflow-x:auto;}
+  .console{position:fixed;left:0;right:0;bottom:0;background:var(--console);color:var(--console-ink);font-family:ui-monospace,Menlo,monospace;font-size:12px;padding:10px 24px;max-height:130px;overflow:auto;border-top:3px solid var(--accent);}
+  .console b{color:#7FB8E8;}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+  .mini{font-size:11.5px;padding:6px 11px;margin-top:0;}
+</style>
+</head>
+<body>
+  <header class="top">
+    <div class="brand"><span class="dot" style="background:var(--accent)"></span>TelcoX</div>
+    <span class="tag">OPERASYON KONSOLU</span>
+    <div class="userchip"><span id="u-name">—</span><button class="btn-ghost" onclick="telcoxLogout()">Çıkış</button></div>
+  </header>
+
+  <div class="wrap">
+    <p class="eyebrow">Servis Sağlığı — /actuator/health</p>
+    <div class="grid-health" id="health"></div>
+
+    <p class="eyebrow">Katalog Yönetimi</p>
+    <div class="cols2">
+      <div class="card">
+        <h3 style="margin:0 0 4px;font-size:15px;">Tarifeler</h3>
+        <div class="tbl-scroll" id="tariffs">Yükleniyor…</div>
+      </div>
+      <div class="card">
+        <h3 style="margin:0 0 4px;font-size:15px;">Yeni Tarife (ADMIN)</h3>
+        <div class="row2">
+          <div><label>Kod</label><input id="nt-code" value="AILE_POSTPAID_30GB"></div>
+          <div><label>Tip</label><select id="nt-type"><option>POSTPAID</option><option>PREPAID</option><option>HYBRID</option></select></div>
+        </div>
+        <label>Ad</label><input id="nt-name" value="Aile Postpaid 30GB">
+        <div class="row2">
+          <div><label>Aylık ücret (₺)</label><input id="nt-fee" value="429.90"></div>
+          <div><label>Segment</label><input id="nt-seg" value="FAMILY"></div>
+        </div>
+        <div class="row2">
+          <div><label>Dakika</label><input id="nt-min" value="1500"></div>
+          <div><label>İnternet (MB)</label><input id="nt-mb" value="30720"></div>
+        </div>
+        <button class="btn" id="nt-create">Tarife Oluştur</button>
+        <div class="actions">
+          <input id="pp-code" placeholder="Tarife kodu" style="max-width:200px">
+          <input id="pp-fee" placeholder="Yeni ücret" style="max-width:110px">
+          <button class="btn sec mini" id="pp-do">Fiyat Güncelle (versiyonlar)</button>
+          <button class="btn sec mini" id="pp-hist">Versiyon Geçmişi</button>
+        </div>
+      </div>
+    </div>
+
+    <p class="eyebrow">Destek Operasyonu</p>
+    <div class="cols2">
+      <div class="card">
+        <h3 style="margin:0 0 4px;font-size:15px;">Müşteri Talepleri</h3>
+        <div class="row2">
+          <input id="tk-cust" value="11111111-0000-4000-8000-000000000001">
+          <button class="btn mini" id="tk-load" style="margin-top:0">Talepleri Getir</button>
+        </div>
+        <div class="tbl-scroll" id="tickets"></div>
+      </div>
+      <div class="card">
+        <h3 style="margin:0 0 4px;font-size:15px;">Bildirim Gönder / Şablonlar</h3>
+        <label>Kullanıcı (customerId)</label><input id="nf-user" value="11111111-0000-4000-8000-000000000001">
+        <div class="row2">
+          <div><label>Şablon</label><select id="nf-tpl"></select></div>
+          <div><label>Placeholder JSON</label><input id="nf-ph" value='{"thresholdPercentage":"80"}'></div>
+        </div>
+        <button class="btn" id="nf-send">Bildirimi Gönder</button>
+      </div>
+    </div>
+
+    <p class="eyebrow">Faturalama & Müşteri</p>
+    <div class="cols2">
+      <div class="card">
+        <h3 style="margin:0 0 4px;font-size:15px;">Fatura Operasyonu</h3>
+        <div class="actions">
+          <button class="btn mini" id="br-run">Bill-Run Tetikle (ADMIN)</button>
+          <input id="inv-cust" value="11111111-0000-4000-8000-000000000001" style="max-width:280px">
+          <button class="btn sec mini" id="inv-load">Faturaları Getir</button>
+        </div>
+        <div class="tbl-scroll" id="invoices"></div>
+      </div>
+      <div class="card">
+        <h3 style="margin:0 0 4px;font-size:15px;">Yeni Müşteri + KYC</h3>
+        <div class="row2">
+          <div><label>Ad</label><input id="c-first" value="Mert"></div>
+          <div><label>Soyad</label><input id="c-last" value="Kaya"></div>
+        </div>
+        <div class="row2">
+          <div><label>TCKN</label><input id="c-tckn" value="98765432109"></div>
+          <div><label>Doğum tarihi</label><input id="c-dob" value="1994-06-15"></div>
+        </div>
+        <button class="btn" id="c-create">Müşteri Oluştur</button>
+        <div class="actions">
+          <input id="kyc-id" placeholder="customerId" style="max-width:280px">
+          <button class="btn sec mini" id="kyc-approve">KYC Onayla (ADMIN)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="console" id="console"><b>›</b> Hazır. İşlem cevapları burada görünür.</div>
+
+<script src="telcox-shared.js"></script>
+<script>
+const S = telcoxGuard('admin');
+if (S) { document.getElementById('u-name').textContent = S.name; init(); }
+
+const con = document.getElementById('console');
+function logc(label, r){
+  const body = typeof r.data === 'object' ? JSON.stringify(r.data)?.slice(0,600) : String(r.data).slice(0,300);
+  con.innerHTML = `<b>› ${esc(label)}</b> — HTTP ${r.status || 'AĞ HATASI'}<br>${esc(body || '(boş)')}` ;
+}
+
+/* ── Servis sağlığı ── */
+const SERVICES = [
+  {n:'api-gateway', u:'/actuator/health', owner:'Infra'},
+  {n:'customer-service', u:'http://localhost:9002/actuator/health', owner:'Aymina'},
+  {n:'product-catalog', u:'http://localhost:9003/actuator/health', owner:'Nasrulla'},
+  {n:'order-service', u:'http://localhost:9004/actuator/health', owner:'Aymina'},
+  {n:'subscription', u:'http://localhost:9005/actuator/health', owner:'Aymina'},
+  {n:'usage-service', u:'http://localhost:9006/actuator/health', owner:'Mervenur'},
+  {n:'billing-service', u:'http://localhost:9007/actuator/health', owner:'Mervenur'},
+  {n:'payment-service', u:'http://localhost:9008/actuator/health', owner:'Mervenur'},
+  {n:'notification', u:'http://localhost:9009/actuator/health', owner:'Nasrulla'},
+  {n:'ticket-service', u:'http://localhost:9010/actuator/health', owner:'Nasrulla'},
+];
+async function checkHealth(){
+  const el = document.getElementById('health');
+  el.innerHTML = SERVICES.map((s,i)=>`<div class="svc" id="svc-${i}"><div class="svc-head"><span class="dot"></span>${s.n}<span class="pill unk">…</span></div><div class="meta">${s.owner}</div></div>`).join('');
+  SERVICES.forEach(async (s,i)=>{
+    const box = document.getElementById('svc-'+i), dot = box.querySelector('.dot'), pill = box.querySelector('.pill');
+    try {
+      const res = await fetch(s.u, {signal: AbortSignal.timeout(4000)});
+      const up = res.ok; dot.className = 'dot ' + (up?'up':'down');
+      pill.className = 'pill ' + (up?'up':'down'); pill.textContent = up?'UP':'DOWN';
+    } catch {
+      dot.className = 'dot unk'; pill.className = 'pill unk'; pill.textContent = 'ERİŞİLEMEDİ';
+      box.querySelector('.meta').textContent += ' · CORS/kapalı olabilir';
+    }
+  });
+}
+
+/* ── Katalog ── */
+async function loadTariffs(){
+  const r = await api('/api/v1/tariffs?size=50&sort=code,asc');
+  const el = document.getElementById('tariffs');
+  if (!r.ok) { el.textContent = 'Yüklenemedi: ' + r.status; return; }
+  const rows = asList(r.data);
+  el.innerHTML = `<table><thead><tr><th>Kod</th><th>Tip</th><th class="num">Ücret</th><th>Segment</th><th class="num">v</th></tr></thead><tbody>` +
+    rows.map(t=>`<tr><td>${esc(t.code)}</td><td>${esc(t.type)}</td><td class="num">${fmtTL(t.monthlyFee)}</td><td>${esc(t.targetSegment||'—')}</td><td class="num">${t.version}</td></tr>`).join('') + `</tbody></table>`;
+}
+document.getElementById('nt-create').addEventListener('click', async ()=>{
+  const r = await api('/api/v1/tariffs', {method:'POST', body: JSON.stringify({
+    code:document.getElementById('nt-code').value, name:document.getElementById('nt-name').value,
+    type:document.getElementById('nt-type').value, monthlyFee:parseFloat(document.getElementById('nt-fee').value),
+    minutesIncluded:parseInt(document.getElementById('nt-min').value), smsIncluded:500,
+    dataMbIncluded:parseInt(document.getElementById('nt-mb').value),
+    effectiveFrom:new Date().toISOString().slice(0,10), targetSegment:document.getElementById('nt-seg').value })});
+  logc('POST /tariffs', r); if (r.ok) loadTariffs();
+});
+document.getElementById('pp-do').addEventListener('click', async ()=>{
+  const code = document.getElementById('pp-code').value.trim();
+  const r = await api(`/api/v1/tariffs/${code}/price`, {method:'PATCH', body: document.getElementById('pp-fee').value});
+  logc('PATCH /tariffs/'+code+'/price', r); if (r.ok) loadTariffs();
+});
+document.getElementById('pp-hist').addEventListener('click', async ()=>{
+  const code = document.getElementById('pp-code').value.trim();
+  const r = await api(`/api/v1/tariffs/${code}/versions`);
+  logc('GET /tariffs/'+code+'/versions', r);
+});
+
+/* ── Destek ── */
+async function loadTickets(){
+  const r = await api(`/api/v1/tickets?customerId=${document.getElementById('tk-cust').value.trim()}&size=10`);
+  const el = document.getElementById('tickets');
+  if (!r.ok) { el.textContent = 'Yüklenemedi: ' + r.status; return; }
+  const rows = asList(r.data);
+  el.innerHTML = `<table><thead><tr><th>Kategori</th><th>Öncelik</th><th>Durum</th><th>Ekip</th><th></th></tr></thead><tbody>` +
+    rows.map(t=>`<tr><td>${esc(t.category)}</td><td>${esc(t.priority)}</td><td>${esc(t.status)}</td><td>${esc(t.assignedTeam||'—')}</td>
+      <td><button class="btn sec mini" onclick="ticketOp('${t.id}','${t.status}')">${t.status==='OPEN'?'İşleme Al':t.status==='IN_PROGRESS'?'Çöz':'—'}</button></td></tr>`).join('') + `</tbody></table>`;
+}
+async function ticketOp(id, status){
+  let r;
+  if (status === 'OPEN') r = await api(`/api/v1/tickets/${id}/status`, {method:'PATCH', body: JSON.stringify({status:'IN_PROGRESS'})});
+  else if (status === 'IN_PROGRESS') r = await api(`/api/v1/tickets/${id}/resolve`, {method:'POST'});
+  else return;
+  logc('ticket ' + id.slice(0,8), r); if (r.ok) loadTickets();
+}
+document.getElementById('tk-load').addEventListener('click', loadTickets);
+
+/* ── Bildirim ── */
+async function loadTemplates(){
+  const r = await api('/api/v1/notification-templates');
+  const sel = document.getElementById('nf-tpl');
+  sel.innerHTML = (asList(r.data)).map(t=>`<option>${esc(t.code)}</option>`).join('') || '<option>QUOTA_WARNING_80</option>';
+}
+document.getElementById('nf-send').addEventListener('click', async ()=>{
+  let ph = {}; try { ph = JSON.parse(document.getElementById('nf-ph').value||'{}'); } catch {}
+  const r = await api('/api/v1/notifications/send', {method:'POST', body: JSON.stringify({
+    userId: document.getElementById('nf-user').value.trim(),
+    templateCode: document.getElementById('nf-tpl').value, placeholders: ph })});
+  logc('POST /notifications/send', r);
+});
+
+/* ── Faturalama & müşteri ── */
+document.getElementById('br-run').addEventListener('click', async ()=>{
+  const r = await api('/api/v1/billing/runs', {method:'POST'});
+  logc('POST /billing/runs', r);
+});
+document.getElementById('inv-load').addEventListener('click', async ()=>{
+  const r = await api(`/api/v1/invoices/customer/${document.getElementById('inv-cust').value.trim()}`);
+  const el = document.getElementById('invoices');
+  if (!r.ok) { el.textContent = 'Yüklenemedi: ' + r.status; logc('GET /invoices', r); return; }
+  const rows = asList(r.data);
+  el.innerHTML = `<table><thead><tr><th>Dönem</th><th class="num">Tutar</th><th>Durum</th><th>Son Ödeme</th></tr></thead><tbody>` +
+    rows.map(i=>`<tr><td>${fmtDate(i.periodStart)} – ${fmtDate(i.periodEnd)}</td><td class="num">${fmtTL(i.grandTotal)}</td><td>${esc(i.status)}</td><td>${fmtDate(i.dueDate)}</td></tr>`).join('') + `</tbody></table>`;
+});
+document.getElementById('c-create').addEventListener('click', async ()=>{
+  const r = await api('/api/v1/customers', {method:'POST', body: JSON.stringify({
+    type:'INDIVIDUAL', firstName:document.getElementById('c-first').value, lastName:document.getElementById('c-last').value,
+    identityNumber:document.getElementById('c-tckn').value, dateOfBirth:document.getElementById('c-dob').value })});
+  logc('POST /customers', r);
+  if (r.ok && r.data?.id) document.getElementById('kyc-id').value = r.data.id;
+});
+document.getElementById('kyc-approve').addEventListener('click', async ()=>{
+  const id = document.getElementById('kyc-id').value.trim();
+  const r = await api(`/api/v1/customers/${id}/kyc/approve`, {method:'POST'});
+  logc('POST /customers/'+id.slice(0,8)+'/kyc/approve', r);
+});
+
+function init(){ checkHealth(); loadTariffs(); loadTickets(); loadTemplates(); setInterval(checkHealth, 15000); }
+</script>
+</body>
+</html>

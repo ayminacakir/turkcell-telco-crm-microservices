@@ -21,6 +21,9 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                        // TelcoX web arayuzu (static/) tokensiz acilabilmeli; API'ler JWT ister.
+                        .requestMatchers("/", "/*.html", "/*.js", "/*.css",
+                                "/favicon.ico", "/actuator/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2

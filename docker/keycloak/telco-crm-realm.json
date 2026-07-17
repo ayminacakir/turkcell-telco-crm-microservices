@@ -1,0 +1,47 @@
+{
+  "realm": "telco-crm",
+  "enabled": true,
+  "registrationAllowed": false,
+  "accessTokenLifespan": 3600,
+  "roles": {
+    "realm": [
+      { "name": "ADMIN", "description": "Operasyon/yonetici islemleri" },
+      { "name": "USER", "description": "Abone self-servis islemleri" }
+    ]
+  },
+  "users": [
+    {
+      "username": "elif.aydin",
+      "email": "elif.aydin@telcox.com.tr",
+      "firstName": "Elif",
+      "lastName": "Aydın",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "telcox123", "temporary": false }],
+      "realmRoles": ["USER"]
+    },
+    {
+      "username": "ops",
+      "email": "ops@telcox.com.tr",
+      "firstName": "Operasyon",
+      "lastName": "Ekibi",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "telcox123", "temporary": false }],
+      "realmRoles": ["ADMIN", "USER"]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "telcox-web",
+      "name": "TelcoX Web Arayuzu",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "redirectUris": ["http://localhost:8080/*"],
+      "webOrigins": ["*"]
+    }
+  ]
+}
