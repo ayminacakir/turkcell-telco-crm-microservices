@@ -15,6 +15,7 @@ public record TariffCreateRequest(
         @PositiveOrZero Integer smsIncluded,
         @PositiveOrZero Integer dataMbIncluded,
         @NotNull LocalDate effectiveFrom,
-        LocalDate effectiveTo
+        LocalDate effectiveTo,
+        @Size(max = 50) String targetSegment
 ) {
 }

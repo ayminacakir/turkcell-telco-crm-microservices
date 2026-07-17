@@ -20,6 +20,7 @@ import com.turkcell.ticket_service.repository.TicketRepository;
 import com.turkcell.ticket_service.service.TicketService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,6 +44,17 @@ public class TicketServiceImpl implements TicketService {
             TicketPriority.HIGH, 8L,
             TicketPriority.MEDIUM, 24L,
             TicketPriority.LOW, 72L
+    );
+
+    /**
+     * FR-32: Ticket otomatik olarak ilgili ekibe SLA bazli atanir.
+     * Oncelik ne kadar yuksekse, o kadar kidemli/hizli ekibe dusuyor.
+     */
+    private static final Map<TicketPriority, String> AUTO_ASSIGN_TEAM = Map.of(
+            TicketPriority.CRITICAL, "Kidemli Destek Ekibi",
+            TicketPriority.HIGH, "Kidemli Destek Ekibi",
+            TicketPriority.MEDIUM, "Genel Destek Ekibi",
+            TicketPriority.LOW, "Genel Destek Ekibi"
     );
 
     /** İzin verilen durum geçişleri. RESOLVED -> IN_PROGRESS (reopen) dahil. */
@@ -81,6 +93,7 @@ public class TicketServiceImpl implements TicketService {
         ticket.setStatus(TicketStatus.OPEN);
         ticket.setCreatedAt(now);
         ticket.setSlaDueAt(now.plusHours(SLA_HOURS.get(request.priority())));
+        ticket.setAssignedTeam(AUTO_ASSIGN_TEAM.get(request.priority()));
 
         Ticket saved = ticketRepository.save(ticket);
 
@@ -109,18 +122,40 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<TicketResponse> getByCustomerId(UUID customerId) {
-        return ticketRepository.findByCustomerId(customerId).stream().map(this::toResponse).toList();
+    public PageResponse<TicketResponse> getByCustomerId(UUID customerId, Pageable pageable) {
+        return PageResponse.of(ticketRepository.findByCustomerId(customerId, pageable).map(this::toResponse));
     }
 
     @Override
     public TicketResponse updateStatus(UUID id, TicketStatusUpdateRequest request) {
         Ticket ticket = findEntity(id);
+        transitionTo(ticket, request.status());
+        return toResponse(ticket);
+    }
+
+    @Override
+    public TicketResponse assign(UUID id, TicketAssignRequest request) {
+        Ticket ticket = findEntity(id);
+        ticket.setAssignedTeam(request.team());
+        return toResponse(ticket);
+    }
+
+    @Override
+    public TicketResponse resolve(UUID id) {
+        Ticket ticket = findEntity(id);
+        transitionTo(ticket, TicketStatus.RESOLVED);
+        return toResponse(ticket);
+    }
+
+    /**
+     * Durum gecisini dogrular, uygular ve RESOLVED'a geciste TicketResolved event'ini yayinlar.
+     * updateStatus() (generic) ve resolve() (spec'teki dedicated endpoint) ayni mantigi kullanir.
+     */
+    private void transitionTo(Ticket ticket, TicketStatus target) {
         TicketStatus current = ticket.getStatus();
-        TicketStatus target = request.status();
 
         if (current == target) {
-            return toResponse(ticket);
+            return;
         }
 
         if (!ALLOWED_TRANSITIONS.getOrDefault(current, EnumSet.noneOf(TicketStatus.class)).contains(target)) {
@@ -136,8 +171,6 @@ public class TicketServiceImpl implements TicketService {
                             UUID.randomUUID(), "TicketResolved",
                             ticket.getId(), ticket.getCustomerId(), LocalDateTime.now()));
         }
-
-        return toResponse(ticket);
     }
 
     @Override
@@ -212,7 +245,7 @@ public class TicketServiceImpl implements TicketService {
     private TicketResponse toResponse(Ticket t) {
         return new TicketResponse(
                 t.getId(), t.getCustomerId(), t.getCategory(), t.getPriority(),
-                t.getStatus(), t.getSlaDueAt(), t.getCreatedAt()
+                t.getStatus(), t.getSlaDueAt(), t.getCreatedAt(), t.getAssignedTeam()
         );
     }
 

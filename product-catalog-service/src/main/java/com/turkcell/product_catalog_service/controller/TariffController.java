@@ -1,9 +1,13 @@
 package com.turkcell.product_catalog_service.controller;
 
+import com.turkcell.product_catalog_service.dto.PageResponse;
 import com.turkcell.product_catalog_service.dto.TariffCreateRequest;
 import com.turkcell.product_catalog_service.dto.TariffResponse;
 import com.turkcell.product_catalog_service.service.TariffService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -32,6 +36,12 @@ public class TariffController {
         return ResponseEntity.ok(tariffService.getByCode(code));
     }
 
+    /** FR-08: Tarifenin arsivlenmis eski versiyonlari (en yeniden eskiye). */
+    @GetMapping("/{code}/versions")
+    public ResponseEntity<List<TariffResponse>> getVersions(@PathVariable String code) {
+        return ResponseEntity.ok(tariffService.getVersions(code));
+    }
+
     @PatchMapping("/{code}/price")
     public ResponseEntity<TariffResponse> updatePrice(
             @PathVariable String code,
@@ -39,12 +49,14 @@ public class TariffController {
         return ResponseEntity.ok(tariffService.updatePrice(code, newMonthlyFee));
     }
 
+    /** Dokuman bolum 12: ?page=0&size=20&sort=code,asc — Spring Data Pageable. */
     @GetMapping
-    public ResponseEntity<List<TariffResponse>> getAll(
-            @RequestParam(name = "status", required = false) String status) {
+    public ResponseEntity<PageResponse<TariffResponse>> getAll(
+            @RequestParam(name = "status", required = false) String status,
+            @PageableDefault(size = 20, sort = "code", direction = Sort.Direction.ASC) Pageable pageable) {
         if ("ACTIVE".equalsIgnoreCase(status)) {
-            return ResponseEntity.ok(tariffService.getActive());
+            return ResponseEntity.ok(tariffService.getActive(pageable));
         }
-        return ResponseEntity.ok(tariffService.getAll());
+        return ResponseEntity.ok(tariffService.getAll(pageable));
     }
 }

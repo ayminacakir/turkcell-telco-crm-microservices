@@ -6,22 +6,24 @@ import com.turkcell.notification_service.domain.entity.Notification;
 import com.turkcell.notification_service.domain.entity.NotificationTemplate;
 import com.turkcell.notification_service.domain.enums.NotificationStatus;
 import com.turkcell.notification_service.dto.NotificationResponse;
+import com.turkcell.notification_service.dto.PageResponse;
 import com.turkcell.notification_service.dto.SendNotificationRequest;
 import com.turkcell.notification_service.exception.ResourceNotFoundException;
 import com.turkcell.notification_service.outbox.entity.OutboxEvent;
 import com.turkcell.notification_service.outbox.enums.OutboxStatus;
 import com.turkcell.notification_service.outbox.event.NotificationDispatchedEvent;
 import com.turkcell.notification_service.outbox.repository.OutboxEventRepository;
+import com.turkcell.notification_service.repository.NotificationPreferenceRepository;
 import com.turkcell.notification_service.repository.NotificationRepository;
 import com.turkcell.notification_service.repository.NotificationTemplateRepository;
 import com.turkcell.notification_service.service.NotificationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -35,15 +37,18 @@ public class NotificationServiceImpl implements NotificationService {
     private final NotificationTemplateRepository templateRepository;
     private final ObjectMapper objectMapper;
     private final OutboxEventRepository outboxEventRepository;
+    private final NotificationPreferenceRepository preferenceRepository;
 
     public NotificationServiceImpl(NotificationRepository notificationRepository,
                                     NotificationTemplateRepository templateRepository,
                                     ObjectMapper objectMapper,
-                                    OutboxEventRepository outboxEventRepository) {
+                                    OutboxEventRepository outboxEventRepository,
+                                    NotificationPreferenceRepository preferenceRepository) {
         this.notificationRepository = notificationRepository;
         this.templateRepository = templateRepository;
         this.objectMapper = objectMapper;
         this.outboxEventRepository = outboxEventRepository;
+        this.preferenceRepository = preferenceRepository;
     }
 
     @Override
@@ -52,14 +57,28 @@ public class NotificationServiceImpl implements NotificationService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Template not found with code: " + request.templateCode()));
 
-        String renderedBody = render(template.getBodyTemplate(), request.placeholders());
+        // FR-30: Kullanicinin iletisim tercihlerine (opt-in/opt-out) saygi gosterilir.
+        // Kayit yoksa varsayilan opt-in (izinli) kabul edilir.
+        boolean optedOut = preferenceRepository
+                .findByUserIdAndChannel(request.userId(), template.getChannel())
+                .map(com.turkcell.notification_service.domain.entity.NotificationPreference::isOptedOut)
+                .orElse(false);
 
         Notification notification = new Notification();
         notification.setUserId(request.userId());
         notification.setTemplateCode(template.getCode());
         notification.setChannel(template.getChannel());
         notification.setPayloadJson(toJson(request.placeholders()));
-        notification.setStatus(NotificationStatus.PENDING);
+
+        if (optedOut) {
+            log.info("userId={} kanal={} icin bildirimden cikmis (opt-out), gonderim atlaniyor, template={}",
+                    request.userId(), template.getChannel(), template.getCode());
+            notification.setStatus(NotificationStatus.SKIPPED);
+            Notification saved = notificationRepository.save(notification);
+            return toResponse(saved);
+        }
+
+        String renderedBody = render(template.getBodyTemplate(), request.placeholders());
 
         // MVP: gerçek SMS/e-posta/push gönderimi yok, mock gönderim ile SENT'e çekiliyor.
         // İleride burası SmsSenderClient / EmailSenderClient gibi bir port'a devredilecek.
@@ -89,8 +108,8 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<NotificationResponse> getByUserId(UUID userId) {
-        return notificationRepository.findByUserId(userId).stream().map(this::toResponse).toList();
+    public PageResponse<NotificationResponse> getByUserId(UUID userId, Pageable pageable) {
+        return PageResponse.of(notificationRepository.findByUserId(userId, pageable).map(this::toResponse));
     }
 
     private String render(String bodyTemplate, Map<String, String> placeholders) {

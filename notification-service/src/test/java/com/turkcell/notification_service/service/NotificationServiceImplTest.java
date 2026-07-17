@@ -13,6 +13,7 @@ import com.turkcell.notification_service.service.impl.NotificationServiceImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.turkcell.notification_service.outbox.repository.OutboxEventRepository;
+import com.turkcell.notification_service.repository.NotificationPreferenceRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,11 +42,14 @@ class NotificationServiceImplTest {
     @Mock
     private OutboxEventRepository outboxEventRepository;
 
+    @Mock
+    private NotificationPreferenceRepository preferenceRepository;
+
     private NotificationServiceImpl notificationService;
 
     @BeforeEach
     void setUp() {
-        notificationService = new NotificationServiceImpl(notificationRepository, templateRepository, new ObjectMapper().registerModule(new JavaTimeModule()), outboxEventRepository);
+        notificationService = new NotificationServiceImpl(notificationRepository, templateRepository, new ObjectMapper().registerModule(new JavaTimeModule()), outboxEventRepository, preferenceRepository);
     }
 
     @Test

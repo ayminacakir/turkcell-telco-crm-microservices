@@ -23,7 +23,7 @@ spring:
           - id: billing-service
             uri: lb://billing-service
             predicates:
-              - Path=/api/v1/billing/**
+              - Path=/api/v1/billing/**,/api/v1/invoices/**,/api/v1/bill-cycles/**
           - id: payment-service
             uri: lb://payment-service
             predicates:
@@ -35,7 +35,7 @@ spring:
           - id: notification-service
             uri: lb://notification-service
             predicates:
-              - Path=/api/v1/notifications/**
+              - Path=/api/v1/notifications/**,/api/v1/notification-templates/**
           - id: ticket-service
             uri: lb://ticket-service
             predicates:
@@ -43,4 +43,4 @@ spring:
           - id: product-catalog-service
             uri: lb://product-catalog-service
             predicates:
-              - Path=/api/v1/products/**
+              - Path=/api/v1/tariffs/**,/api/v1/addons/**

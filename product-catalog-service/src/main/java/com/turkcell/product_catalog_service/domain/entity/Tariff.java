@@ -51,6 +51,14 @@ public class Tariff {
     @Column(name = "effective_to")
     private LocalDate effectiveTo;
 
+    // FR-06: her urunun hedef segmenti vardir (orn. YOUTH, CORPORATE, GENERAL).
+    @Column(name = "target_segment", length = 50)
+    private String targetSegment;
+
+    // FR-08: her degisiklikte artar; onceki hal tariff_versions tablosuna snapshot'lanir.
+    @Column(name = "version", nullable = false)
+    private int version = 1;
+
     @OneToMany(mappedBy = "tariff", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TariffAddon> tariffAddons = new ArrayList<>();
 
@@ -88,6 +96,12 @@ public class Tariff {
 
     public LocalDate getEffectiveTo() { return effectiveTo; }
     public void setEffectiveTo(LocalDate effectiveTo) { this.effectiveTo = effectiveTo; }
+
+    public String getTargetSegment() { return targetSegment; }
+    public void setTargetSegment(String targetSegment) { this.targetSegment = targetSegment; }
+
+    public int getVersion() { return version; }
+    public void setVersion(int version) { this.version = version; }
 
     public List<TariffAddon> getTariffAddons() { return tariffAddons; }
     public void setTariffAddons(List<TariffAddon> tariffAddons) { this.tariffAddons = tariffAddons; }

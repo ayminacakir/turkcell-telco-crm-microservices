@@ -45,6 +45,9 @@ public class Ticket {
     @Column(name = "sla_breach_notified", nullable = false)
     private boolean slaBreachNotified = false;
 
+    @Column(name = "assigned_team", length = 100)
+    private String assignedTeam;
+
     @OneToMany(mappedBy = "ticket", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TicketComment> comments = new ArrayList<>();
 
@@ -73,6 +76,9 @@ public class Ticket {
 
     public boolean isSlaBreachNotified() { return slaBreachNotified; }
     public void setSlaBreachNotified(boolean slaBreachNotified) { this.slaBreachNotified = slaBreachNotified; }
+
+    public String getAssignedTeam() { return assignedTeam; }
+    public void setAssignedTeam(String assignedTeam) { this.assignedTeam = assignedTeam; }
 
     public List<TicketComment> getComments() { return comments; }
     public void setComments(List<TicketComment> comments) { this.comments = comments; }
