@@ -66,12 +66,25 @@
       {service:'subscription-service', message:'payment.completed tüketildi — subscription.activated (CUST-'+p.gb+'GB)', label:'Abonelik aktifleştiriliyor'},
       {service:'usage-service', message:'POST /api/v1/usage/quotas — '+p.gb+'GB / '+p.dk+'DK / '+p.sms+'SMS kotası tanımlandı', label:'Kota tanımlanıyor'},
       {service:'notification-service', message:'Hoş geldin SMS gönderildi — '+name, label:'Bildirim gönderiliyor'}
-    ], 'Esnek paketin hazırlanıyor', ()=>{
-      telcoxSetState({activePlan: name});
-      document.getElementById('active-plan-name').textContent = name;
-      const st = telcoxGetState();
-      telcoxSetState({purchases:[...(st.purchases||[]),{name,price,ts:telcoxNow(),date:new Date().toLocaleDateString('tr-TR',{day:'numeric',month:'short',year:'numeric'})}]});
-      showToast(name + ' aktifleştirildi — ' + price + '/ay');
+    ], 'Esnek paketin hazırlanıyor', async ()=>{
+      // GERÇEK kota güncellemesi: seçilen GB/DK/SMS mobil kotaya yazılır
+      if(window.telcoxReal && telcoxReal.getSub()){
+        // ekler ayrı kalemler olacağı için tarife tabanı = toplam - ek fiyatları (çift sayım olmasın)
+        const chips = Array.from(sec.querySelectorAll('.chip.on')).map(c=>extras.find(e=>e.id===c.dataset.x)).filter(Boolean);
+        const chipSum = chips.reduce((s,e)=>s+e.price,0);
+        const base = Math.max(0, p.total - chipSum);
+        await telcoxReal.setQuota(p.dk, p.sms, p.gb*1024, name, base);
+        // esnek paketi geçmiş + fatura tahmini için kaydet (tarife kalemi, taban ücret)
+        const st0 = telcoxGetState(); const now=new Date(), nb=new Date(now.getFullYear(),now.getMonth()+1,1);
+        const MON=['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+        telcoxSetState({purchases:[...(st0.purchases||[]),{id:Math.random().toString(36).slice(2,10),name:name+' (esnek tarife)',monthlyFee:base,kind:'tariff',cat:'Tarife',catTag:'Esnek Tarife',boughtAt:now.toISOString(),billingMonth:MON[nb.getMonth()]+' '+nb.getFullYear()}]});
+        // seçilen dijital/ek servisleri ayrı ürün olarak kaydet (ücretli olanlar)
+        chips.filter(e=>e.price>0).forEach(ex=> telcoxReal.recordPurchase({name: ex.label, monthlyFee: ex.price, catTag:'Ek Servis'}));
+      } else {
+        telcoxSetState({activePlan: name});
+        document.getElementById('active-plan-name').textContent = name;
+      }
+      showToast(name + ' aktifleştirildi — kotan güncellendi (' + price + '/ay)');
     });
   });
 })();

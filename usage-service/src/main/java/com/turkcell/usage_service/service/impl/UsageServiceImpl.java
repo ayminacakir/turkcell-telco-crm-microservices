@@ -234,6 +234,7 @@ public class UsageServiceImpl implements UsageService {
     private QuotaResponse toQuotaResponse(Quota q) {
         return new QuotaResponse(q.getId(), q.getSubscriptionId(),
             q.getPeriodStart(), q.getPeriodEnd(),
-            q.getMinutesRemaining(), q.getSmsRemaining(), q.getMbRemaining());
+            q.getMinutesRemaining(), q.getSmsRemaining(), q.getMbRemaining(),
+            q.getMinutesTotal(), q.getSmsTotal(), q.getMbTotal());
     }
 }

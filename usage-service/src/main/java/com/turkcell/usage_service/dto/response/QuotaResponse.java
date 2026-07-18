@@ -10,5 +10,8 @@ public record QuotaResponse(
     LocalDate periodEnd,
     int minutesRemaining,
     int smsRemaining,
-    int mbRemaining
+    int mbRemaining,
+    Integer minutesTotal,
+    Integer smsTotal,
+    Integer mbTotal
 ) {}

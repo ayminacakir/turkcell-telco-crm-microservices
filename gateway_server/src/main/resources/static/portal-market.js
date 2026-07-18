@@ -57,9 +57,9 @@
     ], x.n + ' ekleniyor', ()=>{
       card.classList.add('owned');
       btn.textContent = 'Aktif ✓'; btn.classList.remove('primary'); btn.classList.add('ghost'); btn.disabled = true;
-      const st = telcoxGetState();
-      telcoxSetState({purchases:[...(st.purchases||[]),{name:x.n,price:'₺'+x.p,ts:telcoxNow(),date:new Date().toLocaleDateString('tr-TR',{day:'numeric',month:'short',year:'numeric'})}]});
-      showToast(x.n + ' aktifleştirildi');
+      if(window.telcoxReal){ telcoxReal.recordPurchase({name:x.n, monthlyFee:x.p, catTag:'Dijital Servis'}); }
+      else { const st = telcoxGetState(); telcoxSetState({purchases:[...(st.purchases||[]),{name:x.n,price:'₺'+x.p,ts:telcoxNow(),date:new Date().toLocaleDateString('tr-TR',{day:'numeric',month:'short',year:'numeric'})}]}); }
+      showToast(x.n + ' aktifleştirildi — ana sayfa "Dijital Ürünlerim"e eklendi');
     });
   }));
   document.getElementById('fiber-check').addEventListener('click', ()=>{
@@ -68,12 +68,15 @@
     document.getElementById('fiber-result').style.display = 'block';
   });
   document.getElementById('fiber-order').addEventListener('click', ()=>{
-    const speed = document.getElementById('fiber-speed').value.split(' — ')[0];
+    const raw = document.getElementById('fiber-speed').value;
+    const speed = raw.split(' — ')[0];
+    const fee = parseInt((raw.split('₺')[1]||'0').replace(/\D/g,''),10) || 0;
     runSagaInModal([
       {service:'order-service', message:'POST /api/v1/orders — OrderCreated (productCode: FIBER, type: TARIFF)', label:'Başvuru oluşturuluyor'},
       {service:'subscription-service', message:'Fiber aboneliği PENDING_INSTALL — kurulum randevusu ayarlandı', label:'Kurulum planlanıyor'},
       {service:'notification-service', message:'Randevu onayı SMS gönderildi — '+speed, label:'Bildirim gönderiliyor'}
     ], 'Fiber başvurun işleniyor', ()=>{
+      if(window.telcoxReal){ telcoxReal.recordPurchase({name:'Ev İnterneti '+speed, monthlyFee:fee, kind:'flag', category:'Ev İnterneti', catTag:'Ev İnterneti'}); }
       showToast('Fiber başvurun alındı — kurulum: ' + document.getElementById('fiber-date').value);
     });
   });
