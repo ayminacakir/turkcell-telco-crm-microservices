@@ -244,6 +244,20 @@ public class SubscriptionService {
         return toSubscriptionResponse(subscriptionRepository.save(subscription));
     }
 
+    @Transactional
+    public SubscriptionResponse changeTariff(UUID id, String tariffCode) {
+        Subscription subscription = findSubscriptionById(id);
+        if (subscription.getStatus() != SubscriptionStatus.ACTIVE) {
+            throw new IllegalArgumentException("Only an active subscription's tariff can be changed.");
+        }
+        String previous = subscription.getTariffCode();
+        subscription.setTariffCode(tariffCode);
+        Subscription saved = subscriptionRepository.save(subscription);
+        auditLogService.logSubscriptionAction(saved.getId(), "TARIFF_CHANGED",
+                "from=" + previous + " to=" + tariffCode);
+        return toSubscriptionResponse(saved);
+    }
+
     private Subscription findSubscriptionById(UUID id) {
         return subscriptionRepository.findById(id)
                 .orElseThrow(() -> new SubscriptionNotFoundException("Subscription with id " + id + " not found."));

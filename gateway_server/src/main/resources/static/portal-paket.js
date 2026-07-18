@@ -14,7 +14,7 @@
     {id:'xya', label:'Yurt Dışı 5GB', price:120}
   ];
   sec.innerHTML = `
-  <div class="topbar"><div><h1>Paketini Kur</h1><p>GB, dakika ve SMS'i kaydır, eklerini seç — fiyat anında hesaplanır.</p></div></div>
+  <div class="topbar"><div><h1>Paket Değiştir</h1><p>Yukarıdan gerçek bir pakete geçebilir, aşağıdaki hesaplayıcıyla kendi esnek paketini planlayabilirsin.</p></div></div>
   <div class="slider-row"><div class="s-head"><span>İnternet</span><span class="s-val" id="v-gb">40 GB</span></div>
     <input type="range" id="r-gb" min="1" max="100" value="40"><div class="bar-x"><span>1 GB</span><span>100 GB</span></div></div>
   <div class="slider-row"><div class="s-head"><span>Dakika</span><span class="s-val" id="v-dk">1000 DK</span></div>
