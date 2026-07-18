@@ -29,6 +29,12 @@ public class OrderController {
         return orderService.getById(id);
     }
 
+    // Operasyon konsolu: tum siparisler (admin). /api/v1/orders
+    @GetMapping
+    public java.util.List<OrderResponse> getAll() {
+        return orderService.getAll();
+    }
+
     @PostMapping("/{id}/cancel")
     public OrderResponse cancel(@PathVariable UUID id) {
         return orderService.cancel(id);

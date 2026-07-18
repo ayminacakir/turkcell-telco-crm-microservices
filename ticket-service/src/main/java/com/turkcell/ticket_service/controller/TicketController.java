@@ -43,6 +43,13 @@ public class TicketController {
         return ResponseEntity.ok(ticketService.getByCustomerId(customerId, pageable));
     }
 
+    // Operasyon konsolu: tum biletler (admin). /api/v1/tickets/all
+    @GetMapping("/all")
+    public ResponseEntity<PageResponse<TicketResponse>> getAll(
+            @PageableDefault(size = 100, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(ticketService.getAll(pageable));
+    }
+
     @PatchMapping("/{id}/status")
     public ResponseEntity<TicketResponse> updateStatus(@PathVariable UUID id,
                                                          @Valid @RequestBody TicketStatusUpdateRequest request) {

@@ -14,6 +14,9 @@ public interface TicketService {
 
     PageResponse<TicketResponse> getByCustomerId(UUID customerId, Pageable pageable);
 
+    // Operasyon konsolu icin: tum musterilerin biletleri (admin).
+    PageResponse<TicketResponse> getAll(Pageable pageable);
+
     TicketResponse updateStatus(UUID id, TicketStatusUpdateRequest request);
 
     TicketCommentResponse addComment(UUID ticketId, TicketCommentCreateRequest request);

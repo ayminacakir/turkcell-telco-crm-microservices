@@ -101,6 +101,11 @@ public class CustomerService {
         return toResponse(customer);
     }
 
+    // Operasyon konsolu: silinmemis tum musteriler.
+    public List<CustomerResponse> getAll() {
+        return customerRepository.findByDeletedFalse().stream().map(this::toResponse).toList();
+    }
+
     @Transactional
     public CustomerResponse update(UUID id, UpdateCustomerRequest request) {
         Customer customer = findCustomerById(id);

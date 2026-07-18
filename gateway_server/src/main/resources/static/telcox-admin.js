@@ -461,48 +461,176 @@ setInterval(tick,2200);
       rows.map(t=>`<tr><td class="mono">${esc(t.code)}</td><td>${esc(t.name)}</td><td>${esc(t.type)}</td><td>${esc(t.targetSegment||'—')}</td><td class="mono">${fmtTL(t.monthlyFee)}</td><td class="mono">v${t.version}</td><td><span class="pill up"><span class="d"></span>${esc(t.status)}</span></td></tr>`).join('');
   }
 
-  // ---- 3) GERÇEK ticket'lar ----
+  // ---- 3) GERÇEK ticket'lar — TÜM müşteriler (portal talepleri dahil) ----
+  const REAL = { customers:0, ordersToday:0, revenue:0, activeUsers:0, openTickets:0, upSvc:0, downSvc:0, custMap:{} };
+  const setTxt = (id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=v; };
+  const sid = x => x ? String(x).slice(0,8) : '—';
+  const custName = cid => { const c=REAL.custMap[cid]; return c ? (((c.firstName||'')+' '+(c.lastName||'')).trim()||c.companyName||sid(cid)) : sid(cid); };
+
   async function realTickets(){
-    const cid = '11111111-0000-4000-8000-000000000001';
-    const r = await api(`/api/v1/tickets?customerId=${cid}&size=20`);
+    const r = await api('/api/v1/tickets/all?size=100');
     if(!r.ok) return;
     const rows = asList(r.data);
+    REAL.openTickets = rows.filter(t=>t.status!=='RESOLVED'&&t.status!=='CLOSED').length;
     const tbl = document.getElementById('tickets-table');
-    if(!tbl || !rows.length) return;
+    if(!tbl) return;
     const pc = {OPEN:'degraded', IN_PROGRESS:'degraded', RESOLVED:'up', CLOSED:'up'};
     tbl.dataset.static = '';
-    tbl.innerHTML = '<tr><th>ID</th><th>Müşteri</th><th>Kategori</th><th>Öncelik</th><th>Ekip</th><th>Durum</th><th></th></tr>' +
-      rows.map(t=>`<tr><td class="mono">#${t.id.slice(0,8)}</td><td class="mono">${t.customerId.slice(0,8)}</td><td>${esc(t.category)}</td><td>${esc(t.priority)}</td><td>${esc(t.assignedTeam||'—')}</td><td><span class="pill ${pc[t.status]||'degraded'}"><span class="d"></span>${esc(t.status)}</span></td>
-        <td>${t.status==='OPEN'?`<button class="mini-btn" onclick="opsTicket('${t.id}','IP')">İşleme Al</button>`:t.status==='IN_PROGRESS'?`<button class="mini-btn" onclick="opsTicket('${t.id}','R')">Çöz</button>`:'—'}</td></tr>`).join('');
+    tbl.innerHTML = '<tr><th>ID</th><th>Müşteri</th><th>Kategori</th><th>Öncelik</th><th>Atanan Ekip</th><th>Durum</th><th></th></tr>' +
+      (rows.length ? rows.map(t=>`<tr><td class="mono">#${sid(t.id)}</td><td>${esc(custName(t.customerId))}</td><td>${esc(t.category)}</td><td>${esc(t.priority)}</td><td>${esc(t.assignedTeam||'—')}</td><td><span class="pill ${pc[t.status]||'degraded'}"><span class="d"></span>${esc(t.status)}</span></td>
+        <td>${t.status==='OPEN'?`<button class="mini-btn" onclick="opsTicket('${t.id}','IP')">İşleme Al</button>`:t.status==='IN_PROGRESS'?`<button class="mini-btn" onclick="opsTicket('${t.id}','R')">Çöz</button>`:'—'}</td></tr>`).join('')
+        : '<tr><td colspan="7" style="color:var(--ink-dim);">Henüz talep yok.</td></tr>');
   }
   window.opsTicket = async (id, op)=>{
     let r;
     if(op==='IP') r = await api(`/api/v1/tickets/${id}/status`, {method:'PATCH', body: JSON.stringify({status:'IN_PROGRESS'})});
     else r = await api(`/api/v1/tickets/${id}/resolve`, {method:'POST'});
-    if(r.ok){ telcoxPushEvent('ticket-service', `Ticket ${id.slice(0,8)} güncellendi`, 'ok'); realTickets(); }
+    if(r.ok){ telcoxPushEvent('ticket-service', `Ticket ${sid(id)} güncellendi`, 'ok'); realTickets(); }
     else alert('İşlem başarısız: HTTP '+r.status);
   };
 
-  // ---- 4) GERÇEK faturalar ----
-  async function realBilling(){
-    const cid = '11111111-0000-4000-8000-000000000001';
-    const r = await api(`/api/v1/invoices/customer/${cid}`);
+  // ---- 3b) GERÇEK müşteriler ----
+  async function realCustomers(){
+    const r = await api('/api/v1/customers');
     if(!r.ok) return;
     const rows = asList(r.data);
+    REAL.customers = rows.length;
+    REAL.custMap = {}; rows.forEach(c=> REAL.custMap[c.id]=c);
+    const tbl = document.getElementById('customers-table');
+    if(tbl) tbl.innerHTML = '<tr><th>Ad Soyad</th><th>Tip</th><th>Kimlik No</th><th>Durum</th><th>Kayıt</th></tr>' +
+      rows.map(c=>{ const name=((c.firstName||'')+' '+(c.lastName||'')).trim()||c.companyName||'—';
+        const ok = c.status==='ACTIVE'||c.status==='APPROVED';
+        return `<tr><td>${esc(name)}</td><td>${esc(c.type||'—')}</td><td class="mono">${esc(c.identityNumber||'—')}</td><td><span class="pill ${ok?'up':'degraded'}"><span class="d"></span>${esc(c.status||'—')}</span></td><td class="mono">${fmtDate(c.createdAt)}</td></tr>`;
+      }).join('');
+  }
+
+  // ---- 3c) GERÇEK siparişler (portal satın almaları) ----
+  async function realOrders(){
+    const r = await api('/api/v1/orders');
+    if(!r.ok) return;
+    const rows = asList(r.data);
+    const today = new Date().toISOString().slice(0,10);
+    REAL.ordersToday = rows.filter(o=>String(o.createdAt||'').slice(0,10)===today).length;
+    const pc = s => s==='COMPLETED'||s==='ACTIVATED'?'up':(s==='CANCELLED'||s==='FAILED')?'down':'degraded';
+    const html = '<tr><th>Sipariş</th><th>Müşteri</th><th>Tutar</th><th>Durum</th><th>Tarih</th></tr>' +
+      (rows.length ? rows.slice(0,25).map(o=>`<tr><td class="mono">${sid(o.id)}</td><td>${esc(custName(o.customerId))}</td><td class="mono">${fmtTL(o.totalAmount)}</td><td><span class="pill ${pc(o.status)}"><span class="d"></span>${esc(o.status)}</span></td><td class="mono">${fmtDT(o.createdAt)}</td></tr>`).join('')
+        : '<tr><td colspan="5" style="color:var(--ink-dim);">Henüz sipariş yok.</td></tr>');
+    const ot=document.getElementById('orders-table'); if(ot) ot.innerHTML=html;
+    const ro=document.getElementById('recent-orders'); if(ro) ro.innerHTML=html;
+  }
+
+  // ---- 3d) Aktif abone sayısı (monitoring: aktif kullanıcı) ----
+  async function realSubs(){
+    const r = await api('/api/v1/subscriptions/active');
+    if(r.ok) REAL.activeUsers = asList(r.data).length;
+  }
+
+  // ---- 4) GERÇEK faturalar — tüm müşteriler ----
+  async function realBilling(){
+    const cids = Object.keys(REAL.custMap);
+    if(!cids.length){ const c=await api('/api/v1/customers'); if(c.ok) asList(c.data).forEach(x=>REAL.custMap[x.id]=x); }
+    let all = [];
+    for(const cid of Object.keys(REAL.custMap).slice(0,15)){
+      const r = await api(`/api/v1/invoices/customer/${cid}`);
+      if(r.ok) asList(r.data).forEach(i=> all.push(Object.assign({_cid:cid}, i)));
+    }
+    all.sort((a,b)=> new Date(b.periodStart)-new Date(a.periodStart));
+    REAL.revenue = all.filter(i=>i.status==='PAID').reduce((a,i)=>a+(+i.grandTotal||0),0);
+    const pending = all.filter(i=>i.status==='PENDING').length;
+    setTxt('bill-pending', pending);
     const tables = document.getElementById('view-billing').querySelectorAll('table');
     const tbl = tables[tables.length-1];
-    if(!tbl || !rows.length) return;
-    const pc = {PENDING:'degraded', PAID:'up', OVERDUE:'down'};
-    tbl.innerHTML = '<tr><th>Fatura</th><th>Dönem</th><th>Ara Toplam</th><th>KDV</th><th>Genel Toplam</th><th>Durum</th></tr>' +
-      rows.map(i=>`<tr><td class="mono">${i.id.slice(0,8)}</td><td>${fmtDate(i.periodStart)}–${fmtDate(i.periodEnd)}</td><td class="mono">${fmtTL(i.subTotal)}</td><td class="mono">${fmtTL(i.tax)}</td><td class="mono">${fmtTL(i.grandTotal)}</td><td><span class="pill ${pc[i.status]||'degraded'}"><span class="d"></span>${esc(i.status)}</span></td></tr>`).join('');
+    if(tbl){
+      const pc = {PENDING:'degraded', PAID:'up', OVERDUE:'down'};
+      tbl.innerHTML = '<tr><th>Fatura</th><th>Müşteri</th><th>Dönem</th><th>Genel Toplam</th><th>Durum</th></tr>' +
+        (all.length ? all.slice(0,30).map(i=>`<tr><td class="mono">${sid(i.id)}</td><td>${esc(custName(i._cid))}</td><td>${fmtDate(i.periodStart)}–${fmtDate(i.periodEnd)}</td><td class="mono">${fmtTL(i.grandTotal)}</td><td><span class="pill ${pc[i.status]||'degraded'}"><span class="d"></span>${esc(i.status)}</span></td></tr>`).join('')
+          : '<tr><td colspan="5" style="color:var(--ink-dim);">Fatura yok.</td></tr>');
+    }
   }
+
+  // ---- 5) Dashboard istatistikleri + Monitoring (GERÇEK türetilmiş) ----
+  function svcCounts(){
+    let up=0,down=0,cpuSum=0,pods=0,maxPods=0;
+    (typeof TELCOX_SERVICES!=='undefined'?TELCOX_SERVICES:[]).forEach(s=>{
+      const r = (typeof runtime!=='undefined')?runtime[s.name]:null; if(!r) return;
+      if(r.status==='down'){ down++; } else { up++; cpuSum+=(r.cpu||s.baseCpu||20); pods+=(r.replicas||s.minPods||1); }
+      maxPods += (s.maxPods||1);
+    });
+    const n = (typeof TELCOX_SERVICES!=='undefined')?TELCOX_SERVICES.length:1;
+    return { up, down, avgCpu: up? Math.round(cpuSum/up):0, pods, maxPods, total:n };
+  }
+  function renderStatsReal(){
+    const s = svcCounts();
+    REAL.upSvc=s.up; REAL.downSvc=s.down;
+    // dashboard
+    setTxt('st-customers', REAL.customers);
+    setTxt('st-orders', REAL.ordersToday);
+    setTxt('st-revenue', fmtTL(REAL.revenue));
+    setTxt('st-tickets', REAL.openTickets);
+    setTxt('st-services', s.up+'/'+s.total);
+    setTxt('st-error', (s.down? (s.down+' down'):'%0.2'));
+    // monitoring (gerçek: aktif abone + ayakta servis)
+    setTxt('kube-active-users', REAL.activeUsers);
+    setTxt('kube-total-pods', s.pods||s.up);
+    setTxt('kube-total-max', s.maxPods);
+    setTxt('kube-avg-cpu', '%'+s.avgCpu);
+  }
+
+  // ---- 6) Logs — gerçek servis sağlığı + son aktivite ----
+  function realLogs(){
+    const el = document.getElementById('log-stream'); if(!el) return;
+    const svcF=(document.getElementById('log-svc-filter')||{}).value||'all';
+    const lvlF=(document.getElementById('log-lvl-filter')||{}).value||'all';
+    const now = new Date().toLocaleTimeString('tr-TR');
+    let lines = [];
+    (typeof TELCOX_SERVICES!=='undefined'?TELCOX_SERVICES:[]).forEach(sv=>{
+      const r=(typeof runtime!=='undefined')?runtime[sv.name]:null; if(!r) return;
+      if(r.status==='down') lines.push({lvl:'ERROR', service:sv.name, message:'health=DOWN — /actuator/health erişilemedi'});
+      else lines.push({lvl:'INFO', service:sv.name, message:`health=UP · replicas=${r.replicas||1} · cpu=%${r.cpu||sv.baseCpu||20} · lat=${r.latency||30}ms`});
+    });
+    lines.push({lvl:'INFO', service:'ops-console', message:`${REAL.customers} müşteri · ${REAL.activeUsers} aktif abone · ${REAL.openTickets} açık talep · ${REAL.upSvc}/${(TELCOX_SERVICES||[]).length} servis UP`});
+    if(svcF!=='all') lines=lines.filter(l=>l.service===svcF);
+    if(lvlF!=='all') lines=lines.filter(l=>l.lvl===lvlF);
+    el.innerHTML = lines.map(l=>`<div class="stream-line"><span class="lvl ${l.lvl}">${l.lvl}</span><span class="mono dim">${now}</span><span class="l-svc">${esc(l.service)}</span><span>${esc(l.message)}</span></div>`).join('') || '<div class="empty-note">Log yok.</div>';
+  }
+
+  // business sayılarını gerçek değerlere kilitle (sim rastgeleliğini etkisiz kılar)
+  try {
+    if(typeof biz==='object' && biz){
+      Object.defineProperty(biz,'customers',{configurable:true,get:()=>REAL.customers||0,set:()=>{}});
+      Object.defineProperty(biz,'ordersToday',{configurable:true,get:()=>REAL.ordersToday||0,set:()=>{}});
+      Object.defineProperty(biz,'revenueToday',{configurable:true,get:()=>REAL.revenue||0,set:()=>{}});
+      Object.defineProperty(biz,'activeUsers',{configurable:true,get:()=>REAL.activeUsers||0,set:()=>{}});
+    }
+  } catch(e){}
+
+  // Sim'in renderStats/renderLogs'unu sarmalayıp GERÇEK değerlerle üzerine yaz
+  // (sim alarm rozetlerini korur; st-* ve loglar bizim gerçek veriyle güncellenir).
+  try {
+    if(typeof renderStats==='function'){ const _rs=renderStats; renderStats=function(){ try{_rs();}catch(e){} renderStatsReal(); }; }
+    if(typeof renderLogs==='function'){ renderLogs = realLogs; }
+  } catch(e){}
+
+  async function pollFast(){ await Promise.all([realTickets(), realOrders(), realSubs()]); renderStatsReal(); realLogs(); }
+  async function pollSlow(){ await realCustomers(); await realOrders(); await realBilling(); renderStatsReal(); }
 
   const origGo = window.goView;
   window.goView = function(v){
     origGo(v);
     if(v==='products') realProducts();
     if(v==='tickets') realTickets();
+    if(v==='customers') realCustomers();
+    if(v==='orders') realOrders();
     if(v==='billing') realBilling();
+    if(v==='logs') realLogs();
+    if(v==='monitoring'||v==='dashboard') renderStatsReal();
   };
-  realProducts(); realTickets(); realBilling();
+
+  // log filtreleri gerçek loglara bağlansın
+  ['log-svc-filter','log-lvl-filter'].forEach(id=>{ const e=document.getElementById(id); if(e) e.addEventListener('change', realLogs); });
+
+  // ilk yükleme + canlı poll
+  (async ()=>{ await realCustomers(); await Promise.all([realProducts(), realTickets(), realOrders(), realSubs(), realBilling()]); renderStatsReal(); realLogs(); })();
+  setInterval(pollFast, 8000);
+  setInterval(pollSlow, 30000);
 })();

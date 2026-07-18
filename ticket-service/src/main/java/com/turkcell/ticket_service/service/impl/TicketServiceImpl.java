@@ -127,6 +127,12 @@ public class TicketServiceImpl implements TicketService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public PageResponse<TicketResponse> getAll(Pageable pageable) {
+        return PageResponse.of(ticketRepository.findAll(pageable).map(this::toResponse));
+    }
+
+    @Override
     public TicketResponse updateStatus(UUID id, TicketStatusUpdateRequest request) {
         Ticket ticket = findEntity(id);
         transitionTo(ticket, request.status());

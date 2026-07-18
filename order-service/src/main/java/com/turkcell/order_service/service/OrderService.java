@@ -133,6 +133,14 @@ public class OrderService {
         return toOrderResponse(savedOrder, savedOrderItems);
     }
 
+    // Operasyon konsolu: tum siparisler (admin listesi, en yeni ustte).
+    public List<OrderResponse> getAll() {
+        return orderRepository.findAll().stream()
+                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
+                .map(o -> toOrderResponse(o, orderItemRepository.findByOrderId(o.getId())))
+                .toList();
+    }
+
     public OrderResponse getById(UUID id) {
         Order order = findOrderById(id);
         List<OrderItem> items = orderItemRepository.findByOrderId(order.getId());

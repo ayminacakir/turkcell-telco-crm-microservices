@@ -48,6 +48,12 @@ public class CustomerController {
         return customerService.getById(id);
     }
 
+    // Operasyon konsolu: tum musteriler (admin). /api/v1/customers
+    @GetMapping
+    public java.util.List<CustomerResponse> getAll() {
+        return customerService.getAll();
+    }
+
     @PutMapping("/{id}")
     public CustomerResponse update(
             @PathVariable UUID id,
