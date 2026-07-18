@@ -11,7 +11,10 @@ up=0; total=0
 for e in "${S[@]}"; do
   name="${e%%:*}"; port="${e##*:}"; total=$((total+1))
   code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 "http://localhost:$port/actuator/health" 2>/dev/null)
+  # 200 = acik health; 401/403 = servis AYAKTA ama /actuator/health JWT korumali
+  # (customer & billing). Her ikisi de "calisiyor" demek; sadece 000/yok = kapali.
   if [ "$code" = "200" ]; then printf "%-20s %-8s ✅ UP\n" "$name" "$port"; up=$((up+1))
+  elif [ "$code" = "401" ] || [ "$code" = "403" ]; then printf "%-20s %-8s ✅ UP (health kilitli)\n" "$name" "$port"; up=$((up+1))
   else printf "%-20s %-8s ❌ (%s)\n" "$name" "$port" "${code:-yok}"; fi
 done
 echo "──────"
