@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -46,7 +47,8 @@ public class UsageController {
         return ResponseEntity.ok(usageService.getActiveQuota(subscriptionId));
     }
 
-    // Kota oluştur
+    // Kota oluştur (internal/admin)
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/quotas")
     public ResponseEntity<QuotaResponse> createQuota(
             @Valid @RequestBody CreateQuotaRequest request) {

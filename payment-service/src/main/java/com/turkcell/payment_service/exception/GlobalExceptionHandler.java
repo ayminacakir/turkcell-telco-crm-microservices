@@ -1,34 +1,51 @@
 package com.turkcell.payment_service.exception;
 
+import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.ProblemDetail;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.time.LocalDateTime;
-import java.util.HashMap;
+import java.net.URI;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<ErrorResponse> handleRuntime(RuntimeException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(new ErrorResponse(ex.getMessage(), HttpStatus.BAD_REQUEST.value(), LocalDateTime.now()));
+    public ProblemDetail handleRuntime(RuntimeException ex, HttpServletRequest request) {
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        return enrich(pd, "https://telco.example/errors/bad-request", "Bad request", request);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> handleValidation(MethodArgumentNotValidException ex) {
-        Map<String, String> errors = new HashMap<>();
+    public ProblemDetail handleValidation(MethodArgumentNotValidException ex, HttpServletRequest request) {
+        Map<String, String> fieldErrors = new LinkedHashMap<>();
         ex.getBindingResult().getAllErrors().forEach(error -> {
             String field = ((FieldError) error).getField();
-            errors.put(field, error.getDefaultMessage());
+            fieldErrors.put(field, error.getDefaultMessage());
         });
-        return ResponseEntity.badRequest().body(errors);
+
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Validation failed");
+        pd.setProperty("errors", fieldErrors);
+        return enrich(pd, "https://telco.example/errors/validation-error", "Validation error", request);
     }
 
-    public record ErrorResponse(String message, int status, LocalDateTime timestamp) {}
+    private ProblemDetail enrich(ProblemDetail pd, String type, String title, HttpServletRequest request) {
+        pd.setType(URI.create(type));
+        pd.setTitle(title);
+        pd.setInstance(URI.create(request.getRequestURI()));
+        pd.setProperty("correlationId", resolveCorrelationId());
+        return pd;
+    }
+
+    private String resolveCorrelationId() {
+        String correlationId = MDC.get("correlationId");
+        return correlationId != null ? correlationId : UUID.randomUUID().toString();
+    }
 }

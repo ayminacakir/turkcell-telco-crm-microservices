@@ -111,7 +111,7 @@ public class UsageServiceImpl implements UsageService {
                     quota.setMinutesRemaining(0);
                     quota.setOverageVoiceMinutes(beforeOverage + (used - beforeRemaining));
                 }
-                checkAndPublishThreshold(quota.getSubscriptionId(), "VOICE",
+                checkAndPublishThreshold(quota, "VOICE",
                         beforeRemaining, quota.getMinutesRemaining(), totalIncluded);
                 publishUsageAggregatedIfOverage(quota, beforeOverage, quota.getOverageVoiceMinutes());
             }
@@ -126,7 +126,7 @@ public class UsageServiceImpl implements UsageService {
                     quota.setSmsRemaining(0);
                     quota.setOverageSms(beforeOverage + (used - beforeRemaining));
                 }
-                checkAndPublishThreshold(quota.getSubscriptionId(), "SMS",
+                checkAndPublishThreshold(quota, "SMS",
                         beforeRemaining, quota.getSmsRemaining(), totalIncluded);
                 publishUsageAggregatedIfOverage(quota, beforeOverage, quota.getOverageSms());
             }
@@ -141,7 +141,7 @@ public class UsageServiceImpl implements UsageService {
                     quota.setMbRemaining(0);
                     quota.setOverageDataMb(beforeOverage + (used - beforeRemaining));
                 }
-                checkAndPublishThreshold(quota.getSubscriptionId(), "DATA",
+                checkAndPublishThreshold(quota, "DATA",
                         beforeRemaining, quota.getMbRemaining(), totalIncluded);
                 publishUsageAggregatedIfOverage(quota, beforeOverage, quota.getOverageDataMb());
             }
@@ -172,24 +172,27 @@ public class UsageServiceImpl implements UsageService {
         log.info("UsageAggregated published for subscriptionId={}", quota.getSubscriptionId());
     }
 
-    private void checkAndPublishThreshold(UUID subscriptionId, String type,
+    private void checkAndPublishThreshold(Quota quota, String type,
                                            int before, int after, int total) {
         if (total == 0) return;
 
+        UUID subscriptionId = quota.getSubscriptionId();
         double usedPercent = ((double)(total - after) / total) * 100;
         double beforePercent = ((double)(total - before) / total) * 100;
 
         // %100 aşıldı mı?
         if (after == 0 && before > 0) {
             QuotaThresholdEvent event = new QuotaThresholdEvent(
-                    UUID.randomUUID(), QUOTA_EXCEEDED_EVENT, subscriptionId, type, "PERCENT_100", 0);
+                    UUID.randomUUID(), QUOTA_EXCEEDED_EVENT, quota.getCustomerId(),
+                    subscriptionId, type, "PERCENT_100", 0);
             outboxEventWriter.write(subscriptionId, QUOTA_AGGREGATE_TYPE, QUOTA_EXCEEDED_EVENT, event);
             log.warn("Quota EXCEEDED for subscription: {} type: {}", subscriptionId, type);
         }
         // %80 geçildi mi? (önceden geçilmemişse)
         else if (usedPercent >= 80 && beforePercent < 80) {
             QuotaThresholdEvent event = new QuotaThresholdEvent(
-                    UUID.randomUUID(), QUOTA_THRESHOLD_REACHED_EVENT, subscriptionId, type, "PERCENT_80", after);
+                    UUID.randomUUID(), QUOTA_THRESHOLD_REACHED_EVENT, quota.getCustomerId(),
+                    subscriptionId, type, "PERCENT_80", after);
             outboxEventWriter.write(subscriptionId, QUOTA_AGGREGATE_TYPE, QUOTA_THRESHOLD_REACHED_EVENT, event);
             log.info("Quota 80% reached for subscription: {} type: {}", subscriptionId, type);
         }
