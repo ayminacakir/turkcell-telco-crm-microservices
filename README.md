@@ -27,9 +27,13 @@
 - [Tech Stack](#-tech-stack)
 - [Kurulum](#-kurulum)
 - [Dokümantasyon](#-dokümantasyon)
+- [Kilit Mimari Desenler](#-kilit-mimari-desenler)
+- [Web Arayüzü — TelcoX](#-web-arayüzü--telcox-gerçek-backende-bağlı)
+- [Kabul Senaryoları](#-kabul-senaryoları--uçtan-uca-doğrulandı)
+- [Beklentinin Ötesi](#-beklentinin-ötesi-specin-üstüne-kattıklarımız)
 - [ER Diyagramları](#-er-diyagramları)
 - [Proje Durumu](#-proje-durumu)
-- [Ekip](#-ekip)
+- [Ekip ve Katkılar](#-ekip-ve-katkılar)
 
 ---
 
@@ -237,23 +241,24 @@ Her servisin entity'leri:
 git clone https://github.com/ayminacakir/turkcell-telco-crm-microservices
 cd turkcell-telco-crm-microservices
 
-# 1) Altyapı (Kafka, PostgreSQL × 9, Redis, Keycloak)
+# 1) Altyapı (Kafka, PostgreSQL × 9, Redis, Keycloak — Keycloak realm otomatik import)
 cd docker && docker compose up -d && cd ..
 
-# 2) Servisleri başlat (ayrı terminallerde)
-# config-server → eureka_server → gateway_server → 9 iş servisi
-cd config-server && mvn spring-boot:run
+# 2) Tüm servisleri tek komutla başlat (config → eureka → gateway → 9 iş servisi)
+./scripts/run-all.sh          # ~1-2 dk;  ./scripts/status.sh  ile 12/12 bekle
 
-# 3) Demo verisi (opsiyonel)
+# 3) Tutarlı demo verisi (abonelik, kota, faturalar, talepler, SIM havuzu)
 ./scripts/seed-demo-data.sh
 
 # 4) Web arayüzü
-# http://localhost:8080/TelcoX.html
+# http://localhost:8080/TelcoX.html    (Müşteri: elif.aydin · Yönetici: ops · şifre: telcox123)
 ```
 
-Detaylı adımlar, demo kullanıcıları ve sorun giderme için **[docs/DEMO.md](docs/DEMO.md)** dosyasına bakın.
+**Yardımcı scriptler:** `run-all.sh` (hepsini başlat) · `stop-all.sh` (durdur) · `status.sh` (12/12 sağlık) · `seed-demo-data.sh` (demo veri).
 
-Swagger UI her serviste `/swagger-ui.html` adresindedir (ör. `http://localhost:9002/swagger-ui.html`).
+- 📘 Demo rehberi, kullanıcılar, sorun giderme → **[docs/DEMO.md](docs/DEMO.md)**
+- 🧪 3 kabul senaryosunu uçtan uca çalıştırma (komut + beklenen sonuç) → **[docs/KABUL_TESTLERI.md](docs/KABUL_TESTLERI.md)**
+- Swagger UI her serviste `/swagger-ui.html` (ör. `http://localhost:9002/swagger-ui.html`)
 
 ---
 
@@ -261,8 +266,10 @@ Swagger UI her serviste `/swagger-ui.html` adresindedir (ör. `http://localhost:
 
 | Doküman | Açıklama |
 |---|---|
+| [docs/SUNUM.md](docs/SUNUM.md) | 🎤 **Jüri sunum dokümanı** — mimari, desenler, akışlar, demo, katkılar |
 | [docs/PROJE_GEREKSINIMLERI.md](docs/PROJE_GEREKSINIMLERI.md) | MVP analiz ve tasarım (33 FR) |
 | [docs/DEMO.md](docs/DEMO.md) | TelcoX web arayüzü demo rehberi |
+| [docs/KABUL_TESTLERI.md](docs/KABUL_TESTLERI.md) | 3 kabul senaryosu — uçtan uca test komutları |
 | [docs/event-contracts.md](docs/event-contracts.md) | Kafka event sözleşmeleri |
 | [docs/YONETICI_SUNUM_RAPORU.md](docs/YONETICI_SUNUM_RAPORU.md) | Yönetici sunum raporu |
 | [k8s/product-catalog/README.md](k8s/product-catalog/README.md) | Kubernetes örnek deployment |
@@ -299,34 +306,108 @@ Diyagramlar [dbdiagram.io](https://dbdiagram.io) üzerinde **database per servic
 
 ---
 
-## ✅ Proje Durumu
+## 🔑 Kilit Mimari Desenler
 
-MVP kapsamındaki **33 fonksiyonel gereksinim** tamamlanmıştır.
+Proje, "gerçek dünya" telekom yükünü taşıyacak dağıtık sistem desenleriyle kuruldu:
+
+| Desen | Nerede | Ne sağlar |
+|---|---|---|
+| **Database-per-service** | 9 ayrı PostgreSQL şeması | Servisler birbirinin tablosuna dokunamaz; gevşek bağ |
+| **Transactional Outbox** | order, subscription, usage, billing, payment, ticket | DB commit'i ile Kafka publish'i **atomik** — event kaybı yok; FAILED event retry ile yeniden yayınlanır |
+| **Saga (orchestration)** | order-service | Sipariş→Ödeme→Abonelik dağıtık işlemi; başarısızlıkta kompansasyon (abonelik askıya alma) |
+| **Idempotency** | payment & subscription & usage consumer'ları | `processed_events` tablosu + Idempotency-Key → aynı event iki kez işlenmez |
+| **Cache-aside (Redis)** | product-catalog tarife okuma | Sık okunan katalog Redis'te; JavaTimeModule ile LocalDate serileştirme |
+| **Circuit Breaker / Retry** | Resilience4j (servisler arası Feign) | Hata oranı eşiği aşılınca çağrı kesilir, sistem çökmez |
+| **CQRS-benzeri okuma modeli** | pagination'lı liste uçları | Yazma ve okuma sorumluluğu ayrık; `PageResponse` sözleşmesi |
+| **API Gateway + BFF** | gateway_server (Spring Cloud Gateway MVC) | Tek giriş, JWT doğrulama, `lb://` ile Eureka üzerinden yönlendirme |
+
+📄 Event akış sözleşmeleri: **[docs/event-contracts.md](docs/event-contracts.md)**
+
+---
+
+## 🖥️ Web Arayüzü — TelcoX (gerçek backend'e bağlı)
+
+Arayüz gateway'in içinden servis edilir (tek origin → CORS yok) ve **gerçek servislere** bağlıdır: giriş Keycloak'tan gerçek JWT alır, tüm ekranlar canlı API verisi gösterir.
+
+**👤 Müşteri Portalı** (`elif.aydin`) — telefon / ad / kullanıcı adı ile giriş
+- **Ana Sayfa**: gerçek tarife, güncel fatura, açık talep, **kota çubukları** (gerçek usage)
+- **Paket Değiştir**: gerçek tarife kataloğundan bir pakete geçince **abonelik + kota gerçekten güncellenir** (`PATCH tariff → PUT quota`), çubuklar yenilenir
+- **Kullanımım**: gerçek kota + **tarih aralığı sorgusu** (gerçek CDR history)
+- **Faturalarım**: gerçek faturalar + **Detay** (kalemler, ÖİV %10 + KDV %20 dökümü) + **PDF**
+- **Taleplerim**: konu + kategori/alt kategori + öncelik → gerçek `POST /tickets`
+- **Profilim**: gerçek müşteri/adres/iletişim + düzenleme
+- **Dijital ürünler & satın alma geçmişi**, kota %20 altına düşünce **otomatik paket önerisi**
+
+**🛠️ Operasyon Konsolu** (`ops`) — sol menülü SPA, dark mode
+- **Dashboard / Müşteriler / Ürünler / Siparişler / Faturalama / Ticket Center**: gerçek API verisi
+- **Ticket Center**: tüm müşterilerin talepleri (portaldan açılan dahil) + **otomatik atanan ekip** + İşleme Al / Çöz (gerçek PATCH/POST)
+- **Monitoring**: gerçek servis sağlığı (`/ops/health` aggregatörü) + aktif abone/pod/CPU
+- **Logs / Alarm / Incident**: canlı akış (servis UP/DOWN durumu gerçektir)
+
+> Canlı RBAC: `ops` = ADMIN (tarife oluştur, bill-run, KYC onayı çalışır) · `elif.aydin` = USER (admin uçları 403 alır).
+
+---
+
+## 🧪 Kabul Senaryoları — Uçtan Uca **Doğrulandı**
+
+Dokümanın Bölüm 14'teki 3 kabul senaryosu gerçek servisler üzerinde uçtan uca çalıştırıldı ve **hepsi geçti** (adım adım komutlar: **[docs/KABUL_TESTLERI.md](docs/KABUL_TESTLERI.md)**):
+
+| Senaryo | Akış | Sonuç |
+|---|---|---|
+| **14.1 Onboarding** | müşteri → KYC onay → sipariş → ödeme → abonelik | ✅ Abonelik **ACTIVE** + MSISDN atandı + welcome SMS |
+| **14.2 Aylık Fatura** | bill-run → fatura + PDF → `InvoiceGenerated` → ödeme | ✅ PDF **200/application-pdf** + e-posta SENT + fatura **PAID** |
+| **14.3 Kota Aşımı** | CDR usage → %80 uyarı → %100 aşım → overage | ✅ **%80 + %100 SMS** + overage billing'e (`UsageAggregated`) |
+
+---
+
+## ⭐ Beklentinin Ötesi (Spec'in Üstüne Kattıklarımız)
+
+MVP'nin 33 fonksiyonel gereksinimi tamamlandı; ek olarak jüriye "production-grade" olgunluk göstermek için:
+
+- 🔐 **Uçtan uca güvenlik**: gateway + **9 servisin tamamında** JWT resource-server; Keycloak realm otomatik import; canlı RBAC
+- 🖥️ **Gerçek web arayüzü**: son kullanıcı portalı + operasyon konsolu — mock değil, gerçek API'ye bağlı
+- 🔁 **Outbox FAILED-retry** ve **idempotent consumer**'lar — event kaybı / çift işleme yok
+- 🧾 **PDF fatura üretimi** + ÖİV/KDV vergi dökümü
+- ⚡ **Redis cache** (katalog) + **pagination** (liste uçları) — ölçeklenebilir okuma
+- 🛡️ **Resilience4j** circuit breaker / retry; **PII şifreleme** (müşteri kimlik verisi)
+- ☸️ **Kubernetes** örneği: Deployment + **HPA** (yatay ölçekleme) + README (`k8s/product-catalog/`)
+- 🤖 **GitHub Actions CI**: her push'ta build + test
+- 🌐 **Eureka localhost kaydı**, tek-komut başlatma scriptleri, tutarlı seed verisi
+
+---
+
+## ✅ Proje Durumu
 
 | Alan | Durum |
 |---|---|
 | 9 iş mikroservisi + gateway, Eureka, config-server | ✅ |
-| Database-per-service + Flyway | ✅ |
+| 33 fonksiyonel gereksinim (MVP) | ✅ |
+| Database-per-service + Flyway migration | ✅ |
 | Transactional Outbox + FAILED retry | ✅ |
 | Saga orchestration (order-service) | ✅ |
 | Kafka event-driven entegrasyon | ✅ |
-| JWT güvenlik (gateway + 7 servis) | ✅ |
-| Uçtan uca onboarding, fatura, kota senaryoları | ✅ |
-| TelcoX web arayüzü (Keycloak + demo verisi) | ✅ |
-| GitHub Actions CI | ✅ |
-| Docker Compose altyapısı | ✅ |
+| **JWT güvenlik (gateway + 9 servisin tamamı)** | ✅ |
+| İdempotency + Redis cache + pagination | ✅ |
+| Uçtan uca onboarding / fatura / kota senaryoları (test edildi) | ✅ |
+| TelcoX web arayüzü (portal + ops konsolu, gerçek veri) | ✅ |
+| GitHub Actions CI · Kubernetes + HPA örneği | ✅ |
+| Docker Compose altyapısı (Keycloak realm import) | ✅ |
 
-> **Not:** `order-service` ve `subscription-service` servis seviyesinde JWT henüz eklenmedi; gateway üzerinden erişimde JWT doğrulaması gateway'de yapılır.
+> **Not:** CPU/RAM/pod/HPA görselleri Prometheus olmadığı için simülasyondur; **servis UP/DOWN durumu ise gerçektir** (`/ops/health` sunucu tarafında tüm servislerin `/actuator/health`'ini yoklar). Tam metrik entegrasyonu (Prometheus/Grafana) gelecek çalışmadır.
 
 ---
 
-## 👥 Ekip
+## 👥 Ekip ve Katkılar
 
-| İsim | Sorumlu Servisler |
-|---|---|
-| Nasrulla Emin | product-catalog-service · notification-service · ticket-service |
-| Aymina Çakır | customer-service · order-service · subscription-service |
-| Mervenur Küçükkara | billing-service · payment-service · usage-service |
+Proje 3 kişilik ekip tarafından geliştirildi; her geliştirici 3 mikroservisten sorumlu, altyapı (gateway, Eureka, config-server, Docker, CI, web arayüzü) ortak çalışmayla tamamlandı.
+
+| Geliştirici | Sorumlu Servisler | Öne çıkan katkılar |
+|---|---|---|
+| **Aymina Çakır** | customer · order · subscription | Müşteri CRUD + KYC + **PII şifreleme**; abonelik lifecycle + MSISDN/SIM havuzu; **Saga orchestration**, productCode migration, Feign token interceptor |
+| **Mervenur Küçükkara** | billing · payment · usage | Fatura üretimi + bill-run + **PDF**; mock PSP + retry + **idempotency** + cüzdan + Flyway migration; kota takibi + CDR tüketimi + **aşım bildirimleri** |
+| **Nasrulla Emin** | product-catalog · notification · ticket | Tarife/addon katalog + **versiyonlama** + **Redis cache**; Kafka-driven bildirim + şablon yönetimi; destek talepleri + **SLA + otomatik ekip atama** |
+
+**Ortak:** API Gateway, Eureka, config-server, Docker Compose, GitHub Actions CI, Keycloak realm, TelcoX web arayüzü (müşteri portalı + operasyon konsolu), kabul testleri.
 
 ---
 
