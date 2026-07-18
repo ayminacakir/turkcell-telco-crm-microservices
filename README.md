@@ -266,7 +266,7 @@ cd docker && docker compose up -d && cd ..
 
 | Doküman | Açıklama |
 |---|---|
-| [docs/SUNUM.md](docs/SUNUM.md) | 🎤 **Jüri sunum dokümanı** — mimari, desenler, akışlar, demo, katkılar |
+| [docs/SUNUM.md](docs/SUNUM.md) · [SUNUM.docx](docs/SUNUM.docx) | 🎤 **Jüri sunum dokümanı** (Markdown + Word) — mimari, desenler, akışlar, demo, katkılar |
 | [docs/PROJE_GEREKSINIMLERI.md](docs/PROJE_GEREKSINIMLERI.md) | MVP analiz ve tasarım (33 FR) |
 | [docs/DEMO.md](docs/DEMO.md) | TelcoX web arayüzü demo rehberi |
 | [docs/KABUL_TESTLERI.md](docs/KABUL_TESTLERI.md) | 3 kabul senaryosu — uçtan uca test komutları |
