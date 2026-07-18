@@ -132,7 +132,7 @@
     if(!low.length){ if(host) host.remove(); return; }
     if(!host){ host = document.createElement('div'); host.id='low-usage-banner';
       const topbar = view.querySelector('.topbar');
-      if(topbar && topbar.nextSibling) view.insertBefore(host, topbar.nextSibling); else view.insertBefore(host, view.firstChild);
+      if(topbar && topbar.parentNode===view && topbar.nextSibling) view.insertBefore(host, topbar.nextSibling); else view.insertBefore(host, view.firstChild);
     }
     const parts = low.map(l=>`<b>${l.label}</b> kotan %20 altında (${l.rem} kaldı)`).join(', ');
     const sug = suggestFor(low[0].m);
@@ -256,7 +256,8 @@
   }
   function paintInvoiceChart(view, past, ci){
     let card = document.getElementById('inv-chart');
-    if(!card){ card=document.createElement('div'); card.className='chart-card'; card.id='inv-chart'; view.insertBefore(card, view.querySelector('table')); }
+    if(!card){ card=document.createElement('div'); card.className='chart-card'; card.id='inv-chart';
+      const tbl0=view.querySelector('table'); if(tbl0 && tbl0.parentNode===view) view.insertBefore(card, tbl0); else view.insertBefore(card, view.firstChild); }
     const series = past.slice().reverse().map(i=>({label:MONTHS[new Date(i.periodStart).getMonth()].slice(0,3), val:+i.grandTotal, cur:false}));
     series.push({label:MONTHS[new Date().getMonth()].slice(0,3), val:+ci.grandTotal, cur:true});
     const max = Math.max.apply(null, series.map(s=>s.val))||1;
@@ -384,7 +385,8 @@
         <button class="btn primary" id="us-go" style="height:42px;">Ara</button>
       </div><div id="us-result" style="margin-top:14px;"></div>`;
     const ht=Array.from(view.querySelectorAll('.section-title')).find(s=>/Geçmiş/i.test(s.textContent));
-    if(ht) view.insertBefore(box, ht); else view.appendChild(box);
+    // ht, view-usage'ın DOĞRUDAN çocuğu olmayabilir (portal-usage sarmalıyor) -> gerçek ebeveynine ekle
+    if(ht && ht.parentNode) ht.parentNode.insertBefore(box, ht); else view.appendChild(box);
     document.getElementById('us-go').addEventListener('click', runUsageSearch); runUsageSearch();
   }
   async function runUsageSearch(){
@@ -543,6 +545,14 @@
     const p=e.target.closest('.inv-pdf'); if(p){ downloadPdf(p.dataset.id); return; }
   });
 
-  async function init(){ enhanceTicketForm(); await home(); buildTariffSwitcher(); buildUsageSearch(); buildProfile(); }
+  // Her adım bağımsız: biri hata verse bile diğerleri çalışır (cascade önlenir)
+  async function step(name, fn){ try{ await fn(); }catch(e){ console.error('[portal-real] '+name+' hata:', e); } }
+  async function init(){
+    await step('tickets', enhanceTicketForm);
+    await step('home', home);
+    await step('switcher', buildTariffSwitcher);
+    await step('usage', buildUsageSearch);
+    await step('profile', buildProfile);
+  }
   if(document.readyState!=='loading') init(); else document.addEventListener('DOMContentLoaded', init);
 })();
