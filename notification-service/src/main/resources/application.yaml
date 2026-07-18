@@ -21,3 +21,11 @@ spring:
     schemas: notification_service
     default-schema: notification_service
     baseline-on-migrate: true
+
+# Tek makinede (localhost) calisan gelistirme/demo ortami icin: servisler Eureka'ya
+# 'localhost' olarak kaydolur. Boylece Mac'in IP'si (Wi-Fi/hotspot) degisse bile
+# gateway lb:// ile servislere her zaman ulasir. Coklu-makine kurulumunda kaldirin.
+eureka:
+  instance:
+    hostname: localhost
+    prefer-ip-address: false

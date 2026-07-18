@@ -39,3 +39,11 @@ billing:
     voice-per-minute: 0.50
     sms-per-unit: 0.25
     data-per-mb: 0.10
+
+# Tek makinede (localhost) calisan gelistirme/demo ortami icin: servisler Eureka'ya
+# 'localhost' olarak kaydolur. Boylece Mac'in IP'si (Wi-Fi/hotspot) degisse bile
+# gateway lb:// ile servislere her zaman ulasir. Coklu-makine kurulumunda kaldirin.
+eureka:
+  instance:
+    hostname: localhost
+    prefer-ip-address: false
