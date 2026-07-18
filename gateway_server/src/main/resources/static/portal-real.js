@@ -547,8 +547,19 @@
 
   // Her adım bağımsız: biri hata verse bile diğerleri çalışır (cascade önlenir)
   async function step(name, fn){ try{ await fn(); }catch(e){ console.error('[portal-real] '+name+' hata:', e); } }
+  // Ana sayfadaki "+ Paket / Addon Satın Al" butonu eski simülasyon modalını açıyordu
+  // (kotayı gerçekten güncellemiyordu). Onu çalışan "Paket Değiştir" ekranına yönlendir.
+  function redirectPurchaseBtn(){
+    const op = document.getElementById('open-purchase'); if(!op) return;
+    const clone = op.cloneNode(true);          // inline click-listener'ı kopyalanmaz -> eski modal açılmaz
+    clone.textContent = 'Paket / Tarife Değiştir';
+    op.replaceWith(clone);
+    clone.addEventListener('click', ()=> navTo('builder'));
+  }
+
   async function init(){
     await step('tickets', enhanceTicketForm);
+    await step('purchase-btn', redirectPurchaseBtn);
     await step('home', home);
     await step('switcher', buildTariffSwitcher);
     await step('usage', buildUsageSearch);
