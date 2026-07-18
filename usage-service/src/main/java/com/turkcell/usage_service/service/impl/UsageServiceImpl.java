@@ -92,6 +92,37 @@ public class UsageServiceImpl implements UsageService {
         return toQuotaResponse(quotaRepository.save(quota));
     }
 
+    // Tarife degisince cagrilir: en guncel kotayi bulup yeni paketin dahil
+    // miktarlarina sifirlar; hic kota yoksa icinde bulunulan ay icin olusturur.
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public QuotaResponse resetQuota(java.util.UUID subscriptionId, int minutes, int sms, int mb) {
+        Quota quota = quotaRepository.findFirstBySubscriptionIdOrderByPeriodStartDesc(subscriptionId)
+            .orElseGet(() -> {
+                Quota q = new Quota();
+                q.setSubscriptionId(subscriptionId);
+                java.time.LocalDate now = java.time.LocalDate.now();
+                q.setPeriodStart(now.withDayOfMonth(1));
+                q.setPeriodEnd(now.withDayOfMonth(now.lengthOfMonth()));
+                return q;
+            });
+        // Yeni pakete geçiş: hem toplam hem kalan yeni paketin dahil miktarina esitlenir,
+        // kullanim/asim sayaclari sifirlanir; boylece kota satiri tutarli kalir.
+        quota.setMinutesTotal(minutes);
+        quota.setSmsTotal(sms);
+        quota.setMbTotal(mb);
+        quota.setMinutesRemaining(minutes);
+        quota.setSmsRemaining(sms);
+        quota.setMbRemaining(mb);
+        quota.setVoiceUsed(0);
+        quota.setSmsUsed(0);
+        quota.setDataMbUsed(0);
+        quota.setOverageVoiceMinutes(0);
+        quota.setOverageSms(0);
+        quota.setOverageDataMb(0);
+        return toQuotaResponse(quotaRepository.save(quota));
+    }
+
     // FR-19: %80 ve %100 eşik kontrolü + FR-20: aşım billing'e UsageAggregated ile gider
     private void updateQuotaAndCheckThreshold(Quota quota,
                                                UsageRecord.UsageType type, int used) {
@@ -206,6 +237,7 @@ public class UsageServiceImpl implements UsageService {
     private QuotaResponse toQuotaResponse(Quota q) {
         return new QuotaResponse(q.getId(), q.getSubscriptionId(),
             q.getPeriodStart(), q.getPeriodEnd(),
-            q.getMinutesRemaining(), q.getSmsRemaining(), q.getMbRemaining());
+            q.getMinutesRemaining(), q.getSmsRemaining(), q.getMbRemaining(),
+            q.getMinutesTotal(), q.getSmsTotal(), q.getMbTotal());
     }
 }

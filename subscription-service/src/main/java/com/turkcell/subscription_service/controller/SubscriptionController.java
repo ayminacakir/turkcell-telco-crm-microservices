@@ -4,6 +4,7 @@ import com.turkcell.subscription_service.dto.request.ActivateSubscriptionRequest
 import com.turkcell.subscription_service.dto.request.CreateMsisdnPoolRequest;
 import com.turkcell.subscription_service.dto.request.CreateSimCardRequest;
 import com.turkcell.subscription_service.dto.request.UpdateMnpStatusRequest;
+import com.turkcell.subscription_service.dto.request.ChangeTariffRequest;
 import com.turkcell.subscription_service.dto.response.MsisdnPoolResponse;
 import com.turkcell.subscription_service.dto.response.SimCardResponse;
 import com.turkcell.subscription_service.dto.response.SubscriptionResponse;
@@ -70,6 +71,12 @@ public class SubscriptionController {
     @PostMapping("/{id}/terminate")
     public SubscriptionResponse terminate(@PathVariable UUID id) {
         return subscriptionService.terminate(id);
+    }
+
+    @PatchMapping("/{id}/tariff")
+    public SubscriptionResponse changeTariff(@PathVariable UUID id,
+            @jakarta.validation.Valid @RequestBody ChangeTariffRequest request) {
+        return subscriptionService.changeTariff(id, request.tariffCode());
     }
 
     @PatchMapping("/{id}/mnp-status")

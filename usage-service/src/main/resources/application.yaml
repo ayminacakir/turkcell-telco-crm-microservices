@@ -34,3 +34,11 @@ usage:
   cdr-simulator:
     enabled: false
     fixed-delay-ms: 30000
+
+# Tek makinede (localhost) calisan gelistirme/demo ortami icin: servisler Eureka'ya
+# 'localhost' olarak kaydolur. Boylece Mac'in IP'si (Wi-Fi/hotspot) degisse bile
+# gateway lb:// ile servislere her zaman ulasir. Coklu-makine kurulumunda kaldirin.
+eureka:
+  instance:
+    hostname: localhost
+    prefer-ip-address: false

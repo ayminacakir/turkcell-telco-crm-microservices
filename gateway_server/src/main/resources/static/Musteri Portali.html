@@ -8,242 +8,605 @@
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --navy:oklch(24% 0.05 262); --ink:oklch(22% 0.02 265); --ink-soft:oklch(45% 0.02 265);
-    --line:oklch(90% 0.006 265); --bg:oklch(97.5% 0.004 265);
-    --primary:#0057FF; --primary-dark:#0041BF; --primary-soft:#E8F0FF;
-    --accent:#00B8FF; --good:#1DB954; --good-soft:#E3F7EA;
-    --warn:#B75E00; --warn-soft:#FFF1DC; --crit:#C22F2F; --crit-soft:#FBE7E7;
+    --ink: #16202E;
+    --ink-soft: #64748B;
+    --bg: #F7F9FC;
+    --card: #FFFFFF;
+    --line: #E3E9F2;
+    --primary: #0057FF;
+    --primary-soft: #E8F0FF;
+    --primary-dark: #0041BF;
+    --accent: #00B8FF;
+    --good: #1DB954;
+    --good-bg: #E4F7EB;
+    --warn: #FFB300;
+    --warn-bg: #FFF4DB;
+    --bad: #FF3B30;
+    --bad-bg: #FFE9E7;
+    --radius: 12px;
   }
-  *{box-sizing:border-box;} body{margin:0;font-family:'Public Sans',sans-serif;color:var(--ink);background:var(--bg);}
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Public Sans',sans-serif;background:var(--bg);color:var(--ink);}
   h1,h2,h3,.brand{font-family:'Sora',sans-serif;}
-  .top{background:white;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;padding:14px 28px;position:sticky;top:0;z-index:5;}
-  .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px;}
-  .brand .dot{width:11px;height:11px;border-radius:4px;background:var(--accent);}
-  .userchip{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:13.5px;}
-  .userchip .msisdn{font-weight:600;background:var(--bg);border:1px solid var(--line);padding:5px 12px;border-radius:999px;}
-  .btn-ghost{border:1px solid var(--line);background:white;border-radius:9px;padding:7px 13px;font:inherit;font-size:13px;font-weight:600;color:var(--ink-soft);cursor:pointer;}
-  .btn-ghost:hover{border-color:var(--primary);color:var(--primary);}
-  .wrap{max-width:1080px;margin:0 auto;padding:26px 24px 70px;}
+  a{color:var(--primary);}
+  a:hover{color:var(--primary-dark);}
 
-  .hero{background:linear-gradient(155deg,#0A1128,#101B3E 55%,#0B2C6B);color:white;border-radius:18px;padding:28px 32px;margin-bottom:26px;}
-  .hero-grid{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:start;}
-  .hero .greet{font-size:13.5px;opacity:.75;}
-  .hero h1{font-size:26px;margin:4px 0 4px;font-weight:800;}
-  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
-  .chip{font-size:11px;font-weight:700;letter-spacing:.05em;padding:4px 11px;border-radius:999px;background:rgba(255,255,255,.13);}
-  .price{text-align:right;} .price .amount{font-family:'Sora',sans-serif;font-size:26px;font-weight:800;color:var(--accent);}
-  .price .cycle{font-size:12px;opacity:.7;}
-  .quota-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:20px;margin-top:24px;}
-  .q-head{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:7px;}
-  .bar{height:8px;border-radius:999px;background:rgba(255,255,255,.16);position:relative;overflow:hidden;}
-  .bar .fill{position:absolute;inset:0 auto 0 0;border-radius:999px;background:#5AD8C8;}
-  .bar .fill.warn{background:#F0B35C;} .bar .fill.crit{background:#F07C7C;}
-  .bar .mark{position:absolute;top:-2px;bottom:-2px;left:80%;width:2px;background:rgba(255,255,255,.5);}
-  .q-note{font-size:11.5px;opacity:.7;margin-top:6px;} .q-note.warned{color:#F0B35C;opacity:1;}
+  .app{display:grid;grid-template-columns:260px 1fr;min-height:100vh;}
+  .sidebar{background:var(--card);border-right:1px solid var(--line);padding:28px 20px;display:flex;flex-direction:column;gap:6px;}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px;color:var(--ink);margin-bottom:28px;padding:0 8px;}
+  .brand .dot{width:10px;height:10px;border-radius:3px;background:var(--primary);}
+  .nav-item{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:10px;color:var(--ink-soft);font-weight:600;font-size:14.5px;cursor:pointer;border:none;background:none;text-align:left;width:100%;}
+  .nav-item:hover{background:var(--primary-soft);color:var(--primary-dark);}
+  .nav-item.active{background:var(--primary);color:white;}
+  .nav-item .ic{width:18px;height:18px;flex-shrink:0;opacity:.85;}
+  .sidebar-foot{margin-top:auto;padding:14px;border-radius:12px;background:var(--primary-soft);font-size:13px;color:var(--primary-dark);line-height:1.5;}
 
-  .cols{display:grid;grid-template-columns:1.15fr .85fr;gap:22px;align-items:start;}
-  @media(max-width:860px){.cols{grid-template-columns:1fr;}.hero-grid{grid-template-columns:1fr;}.price{text-align:left;}}
-  .eyebrow{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin:26px 0 10px;}
-  .card{background:white;border:1px solid var(--line);border-radius:14px;overflow:hidden;}
-  table{width:100%;border-collapse:collapse;font-size:13.5px;}
-  th,td{text-align:left;padding:11px 16px;border-top:1px solid var(--line);}
-  thead th{border-top:none;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft);background:var(--bg);padding:9px 16px;}
-  td.num{text-align:right;font-variant-numeric:tabular-nums;}
-  .pill{font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;white-space:nowrap;}
-  .pill.ok{background:var(--good-soft);color:var(--good);} .pill.warn{background:var(--warn-soft);color:var(--warn);}
-  .pill.crit{background:var(--crit-soft);color:var(--crit);} .pill.info{background:var(--primary-soft);color:var(--primary-dark);}
-  .list{list-style:none;margin:0;padding:0;}
-  .list li{display:flex;align-items:baseline;gap:10px;padding:12px 16px;border-top:1px solid var(--line);}
-  .list li:first-child{border-top:none;}
-  .list .when{margin-left:auto;font-size:12px;color:var(--ink-soft);white-space:nowrap;}
-  .list .body{font-size:13.5px;} .list .body small{display:block;color:var(--ink-soft);font-size:12px;margin-top:2px;}
-  .empty{padding:20px 16px;font-size:13px;color:var(--ink-soft);}
-  .err{padding:14px 16px;font-size:12.5px;color:var(--crit);background:var(--crit-soft);}
+  .main{padding:32px 40px;max-width:1100px;}
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;}
+  .topbar h1{font-size:26px;margin:0;}
+  .topbar p{margin:4px 0 0;color:var(--ink-soft);font-size:14px;}
+  .profile-chip{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);padding:8px 14px 8px 8px;border-radius:999px;}
+  .avatar{width:32px;height:32px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;}
+  .profile-chip .name{font-weight:600;font-size:13.5px;}
+  .profile-chip .sub{font-size:11.5px;color:var(--ink-soft);}
 
-  .newticket{padding:16px;display:grid;gap:10px;border-top:1px solid var(--line);background:var(--bg);}
-  .newticket .row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-  select,input[type=text],textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:9px;font:inherit;font-size:13px;background:white;}
-  textarea{resize:vertical;min-height:52px;}
-  .btn{padding:10px 16px;border:none;border-radius:9px;background:var(--primary);color:white;font-family:'Sora',sans-serif;font-weight:700;font-size:13px;cursor:pointer;justify-self:start;}
-  .btn:hover{background:var(--primary-dark);}
-  .prefs{padding:6px 16px 14px;}
-  .pref-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--line);}
-  .pref-row:first-child{border-top:none;}
-  .pref-row .name{font-weight:600;font-size:13.5px;} .pref-row .desc{font-size:12px;color:var(--ink-soft);}
-  .switch{margin-left:auto;width:40px;height:22px;border-radius:999px;background:var(--primary);position:relative;flex:none;cursor:pointer;border:none;}
-  .switch::after{content:'';position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:white;}
-  .switch.off{background:var(--line);} .switch.off::after{right:auto;left:2px;}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:24px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px;}
+  .card h3{margin:0 0 4px;font-size:13px;color:var(--ink-soft);font-weight:600;text-transform:uppercase;letter-spacing:.04em;}
+  .card .big{font-size:28px;font-weight:700;margin:6px 0;}
+  .card .meta{font-size:13px;color:var(--ink-soft);}
+  .bar-track{height:8px;background:var(--primary-soft);border-radius:99px;overflow:hidden;margin-top:10px;}
+  .bar-fill{height:100%;background:var(--primary);border-radius:99px;}
+
+  .section-title{font-size:16px;font-weight:700;margin:30px 0 14px;display:flex;justify-content:space-between;align-items:center;}
+  .section-title a{font-size:13px;font-weight:600;text-decoration:none;}
+
+  .quota-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+  .quota-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;}
+  .quota-card .label{font-size:13px;color:var(--ink-soft);font-weight:600;margin-bottom:8px;}
+  .quota-card .value{font-size:20px;font-weight:700;margin-bottom:8px;}
+  .quota-card.warn .bar-fill{background:var(--warn);}
+  .quota-card .bar-track{background:oklch(94% 0.01 265);}
+
+  table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;}
+  th,td{text-align:left;padding:13px 18px;font-size:14px;border-bottom:1px solid var(--line);}
+  th{color:var(--ink-soft);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.03em;background:oklch(97% 0.006 265);}
+  tr:last-child td{border-bottom:none;}
+  .status-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12.5px;font-weight:600;}
+  .status-pill.ok{background:var(--good-bg);color:var(--good);}
+  .status-pill.pending{background:var(--warn-bg);color:#B57F00;}
+  .status-pill.paid{background:var(--good-bg);color:var(--good);}
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:10px;border:none;font-weight:600;font-size:13.5px;cursor:pointer;font-family:inherit;}
+  .btn.primary{background:var(--primary);color:white;}
+  .btn.primary:hover{background:var(--primary-dark);}
+  .btn.ghost{background:var(--primary-soft);color:var(--primary-dark);}
+
+  .view{display:none;}
+  .view.active{display:block;}
+
+  .ticket-list{display:flex;flex-direction:column;gap:12px;}
+  .ticket{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;display:flex;justify-content:space-between;align-items:center;}
+  .ticket .t-title{font-weight:600;font-size:14.5px;margin-bottom:3px;}
+  .ticket .t-meta{font-size:12.5px;color:var(--ink-soft);}
+
+  .kv{display:grid;grid-template-columns:180px 1fr;gap:12px 0;font-size:14.5px;}
+  .kv div:nth-child(odd){color:var(--ink-soft);font-weight:600;}
+  .kv-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:24px;max-width:560px;}
+
+  @media (max-width:900px){
+    .app{grid-template-columns:1fr;}
+    .sidebar{display:none;}
+    .grid,.quota-row{grid-template-columns:1fr;}
+  }
+
+  /* Login */
+  #login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg, oklch(97% 0.01 265), var(--bg));}
+  .login-card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:40px 36px;width:380px;box-shadow:0 20px 50px -20px oklch(30% 0.05 265 / 25%);}
+  .login-card .brand{margin-bottom:4px;justify-content:center;}
+  .login-card p.sub{text-align:center;color:var(--ink-soft);font-size:13.5px;margin:0 0 26px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:6px;}
+  .field input{width:100%;padding:11px 13px;border-radius:10px;border:1px solid var(--line);font-family:inherit;font-size:14px;background:oklch(99% 0.002 265);}
+  .field input:focus{outline:2px solid var(--primary);outline-offset:1px;}
+  .btn.block{width:100%;justify-content:center;margin-top:6px;padding:12px;font-size:14.5px;}
+  .login-note{margin-top:16px;font-size:12px;color:var(--ink-soft);text-align:center;}
+
+  /* Purchase modal */
+  .modal-backdrop{position:fixed;inset:0;background:oklch(20% 0.02 265 / 45%);display:none;align-items:center;justify-content:center;z-index:60;padding:20px;}
+  .modal-backdrop.open{display:flex;}
+  .modal{background:var(--card);border-radius:18px;width:480px;max-width:100%;padding:28px;max-height:88vh;overflow-y:auto;}
+  .modal h2{margin:0 0 4px;font-size:19px;}
+  .modal .sub{color:var(--ink-soft);font-size:13.5px;margin:0 0 18px;}
+  .plan-opt{display:flex;align-items:center;gap:12px;border:1.5px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;cursor:pointer;}
+  .plan-opt.selected{border-color:var(--primary);background:var(--primary-soft);}
+  .plan-opt input{accent-color:var(--primary);width:16px;height:16px;}
+  .plan-opt .p-name{font-weight:700;font-size:14.5px;}
+  .plan-opt .p-meta{font-size:12.5px;color:var(--ink-soft);}
+  .plan-opt .p-price{margin-left:auto;font-weight:700;font-size:15px;}
+  .modal-actions{display:flex;gap:10px;margin-top:20px;}
+  .modal-actions .btn{flex:1;}
+
+  .saga-steps{display:flex;flex-direction:column;gap:12px;margin:18px 0;}
+  .saga-step{display:flex;align-items:center;gap:12px;font-size:14px;color:var(--ink-soft);}
+  .saga-step .s-dot{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;}
+  .saga-step.active{color:var(--ink);font-weight:600;}
+  .saga-step.active .s-dot{border-color:var(--primary);color:var(--primary);}
+  .saga-step.done .s-dot{background:var(--good);border-color:var(--good);color:white;}
+  .saga-step.done{color:var(--ink);}
+  .spinner{width:12px;height:12px;border:2px solid var(--primary-soft);border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .toast{position:fixed;bottom:26px;right:26px;background:var(--ink);color:white;padding:14px 20px;border-radius:12px;font-size:14px;font-weight:600;box-shadow:0 10px 30px -10px oklch(0% 0 0 / 40%);z-index:70;display:flex;align-items:center;gap:10px;opacity:0;transform:translateY(10px);transition:all .25s;pointer-events:none;}
+  .toast.show{opacity:1;transform:translateY(0);}
+  .toast .t-dot{width:8px;height:8px;border-radius:50%;background:var(--good);}
+  /* Esnek paket */
+  .slider-row{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 22px;margin-bottom:14px;}
+  .slider-row .s-head{display:flex;justify-content:space-between;font-weight:700;font-size:14.5px;margin-bottom:12px;}
+  .slider-row .s-val{color:var(--primary);font-family:'Sora',sans-serif;font-size:17px;}
+  input[type=range]{width:100%;accent-color:var(--primary);height:6px;}
+  .chip-grid{display:flex;flex-wrap:wrap;gap:10px;margin:6px 0 18px;}
+  .chip{display:flex;align-items:center;gap:8px;border:1.5px solid var(--line);background:var(--card);border-radius:999px;padding:9px 16px;font-weight:600;font-size:13.5px;cursor:pointer;color:var(--ink-soft);}
+  .chip.on{border-color:var(--primary);background:var(--primary-soft);color:var(--primary-dark);}
+  .price-bar{position:sticky;bottom:16px;display:flex;align-items:center;justify-content:space-between;background:var(--ink);color:white;border-radius:16px;padding:16px 22px;box-shadow:0 14px 34px -12px oklch(0% 0 0/40%);}
+  .price-bar .amount{font-family:'Sora',sans-serif;font-size:26px;font-weight:800;}
+  .ai-card{display:flex;gap:14px;background:linear-gradient(120deg,var(--primary-soft),oklch(96% 0.03 220));border:1px solid oklch(88% 0.05 262);border-radius:14px;padding:16px 18px;font-size:14px;line-height:1.55;margin:14px 0;}
+  .ai-card .ai-ic{width:34px;height:34px;border-radius:10px;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;}
+  .ai-card b{color:var(--primary-dark);}
+  /* Grafikler */
+  .chart-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:18px;}
+  .chart-card h4{margin:0 0 14px;font-size:14px;}
+  .bars{display:flex;align-items:flex-end;gap:3px;height:120px;}
+  .bars .b{flex:1;background:var(--primary);border-radius:3px 3px 0 0;min-height:3px;opacity:.85;}
+  .bars .b:hover{background:var(--accent);}
+  .bars.hourly .b{background:oklch(70% 0.16 250);}
+  .bar-x{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-soft);margin-top:6px;}
+  .app-row{display:grid;grid-template-columns:110px 1fr 44px;align-items:center;gap:12px;font-size:13.5px;margin-bottom:10px;}
+  .app-row .bar-track{margin:0;}
+  /* Market */
+  .market-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+  .m-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:8px;}
+  .m-card .m-logo{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-weight:800;color:white;font-family:'Sora',sans-serif;font-size:15px;}
+  .m-card .m-name{font-weight:700;font-size:14.5px;}
+  .m-card .m-desc{font-size:12.5px;color:var(--ink-soft);line-height:1.45;flex:1;}
+  .m-card .m-foot{display:flex;justify-content:space-between;align-items:center;margin-top:4px;}
+  .m-card .m-price{font-weight:800;font-family:'Sora',sans-serif;font-size:15px;}
+  .m-card.owned{border-color:var(--good);}
+  @media (max-width:900px){.market-grid{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
-  <header class="top">
+<div class="app" id="app-root" style="display:none;">
+  <aside class="sidebar">
     <div class="brand"><span class="dot"></span>TelcoX</div>
-    <div class="userchip">
-      <span id="u-name">—</span>
-      <span class="msisdn" id="u-msisdn">—</span>
-      <button class="btn-ghost" onclick="telcoxLogout()">Çıkış</button>
-    </div>
-  </header>
+    <button class="nav-item active" data-view="home">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
+      Ana Sayfa
+    </button>
+    <button class="nav-item" data-view="usage">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+      Kullanımım
+    </button>
+    <button class="nav-item" data-view="builder">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h16M4 16h16"/><circle cx="9" cy="8" r="2.5" fill="var(--card)"/><circle cx="15" cy="16" r="2.5" fill="var(--card)"/></svg>
+      Paket Değiştir
+    </button>
+    <button class="nav-item" data-view="market">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8h14l-1 12H6L5 8z"/><path d="M9 8a3 3 0 016 0"/></svg>
+      Mağaza
+    </button>
+    <button class="nav-item" data-view="invoices">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>
+      Faturalarım
+    </button>
+    <button class="nav-item" data-view="tickets">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      Taleplerim
+    </button>
+    <button class="nav-item" data-view="profile">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+      Profilim
+    </button>
+    <div class="sidebar-foot">Yardıma mı ihtiyacın var? <a href="#" style="font-weight:700;">Destek hattı: 444 0 555</a></div>
+  </aside>
 
-  <div class="wrap">
-    <section class="hero">
-      <div class="hero-grid">
+  <main class="main">
+    <!-- HOME -->
+    <section class="view active" id="view-home" data-screen-label="Ana Sayfa">
+      <div class="topbar">
         <div>
-          <div class="greet" id="greet">Merhaba 👋</div>
-          <h1 id="plan-name">Tarife yükleniyor…</h1>
-          <div class="chips" id="plan-chips"></div>
+          <h1>Merhaba, Elif 👋</h1>
+          <p>Aboneliğin ve son işlemlerin bir bakışta.</p>
         </div>
-        <div class="price">
-          <div class="amount" id="plan-fee">—</div>
-          <div class="cycle" id="plan-cycle">aylık</div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <button class="btn primary" id="open-purchase">+ Paket / Addon Satın Al</button>
+          <div class="profile-chip">
+            <div class="avatar" id="avatar-initials">EA</div>
+            <div><div class="name" id="chip-name">Elif Aydın</div><div class="sub" id="chip-msisdn">0532 *** 47 12</div></div>
+          </div>
         </div>
       </div>
-      <div class="quota-row" id="quota-row"><div class="q-note">Kota bilgisi yükleniyor…</div></div>
+
+      <div class="grid">
+        <div class="card">
+          <h3>Aktif Tarife</h3>
+          <div class="big" id="active-plan-name">Süper 40GB</div>
+          <div class="meta">Postpaid · Yenileme: 3 Ağu 2026</div>
+        </div>
+        <div class="card">
+          <h3>Güncel Fatura</h3>
+          <div class="big" id="home-invoice-amount">₺482,50</div>
+          <div class="meta" id="home-invoice-meta">Son ödeme tarihi 28 Tem 2026</div>
+        </div>
+        <div class="card">
+          <h3>Açık Talep</h3>
+          <div class="big" id="home-ticket-count">1 talep</div>
+          <div class="meta" id="home-ticket-meta">Yanıt bekleniyor · #TCK-2291</div>
+        </div>
+      </div>
+
+      <div class="section-title">Kalan Kotan<a href="#" data-view="usage">Detaylar →</a></div>
+      <div class="quota-row">
+        <div class="quota-card">
+          <div class="label">Dakika</div>
+          <div class="value">640 / 1000 dk</div>
+          <div class="bar-track"><div class="bar-fill" style="width:64%"></div></div>
+        </div>
+        <div class="quota-card">
+          <div class="label">SMS</div>
+          <div class="value">210 / 500 SMS</div>
+          <div class="bar-track"><div class="bar-fill" style="width:42%"></div></div>
+        </div>
+        <div class="quota-card warn">
+          <div class="label">İnternet</div>
+          <div class="value">33.2 / 40 GB</div>
+          <div class="bar-track"><div class="bar-fill" style="width:83%"></div></div>
+        </div>
+      </div>
     </section>
 
-    <div class="cols">
-      <div>
-        <p class="eyebrow">Faturalarım</p>
-        <div class="card"><div id="invoices" class="empty">Yükleniyor…</div></div>
+    <!-- USAGE -->
+    <section class="view" id="view-usage" data-screen-label="Kullanımım">
+      <div class="topbar"><div><h1>Kullanımım</h1><p>Bu faturalama döneminin kullanım detayı.</p></div></div>
+      <div class="quota-row" style="margin-bottom:26px;">
+        <div class="quota-card"><div class="label">Dakika</div><div class="value">640 / 1000 dk</div><div class="bar-track"><div class="bar-fill" style="width:64%"></div></div></div>
+        <div class="quota-card"><div class="label">SMS</div><div class="value">210 / 500 SMS</div><div class="bar-track"><div class="bar-fill" style="width:42%"></div></div></div>
+        <div class="quota-card warn"><div class="label">İnternet</div><div class="value">33.2 / 40 GB</div><div class="bar-track"><div class="bar-fill" style="width:83%"></div></div></div>
+      </div>
+      <div class="section-title">Kullanım Geçmişi</div>
+      <table>
+        <tr><th>Tarih</th><th>Tür</th><th>Detay</th><th>Miktar</th></tr>
+        <tr><td>15 Tem 2026</td><td>Data</td><td>Mobil internet kullanımı</td><td>1.2 GB</td></tr>
+        <tr><td>14 Tem 2026</td><td>Ses</td><td>Giden arama</td><td>18 dk</td></tr>
+        <tr><td>14 Tem 2026</td><td>SMS</td><td>Giden SMS</td><td>4 SMS</td></tr>
+        <tr><td>13 Tem 2026</td><td>Data</td><td>Mobil internet kullanımı</td><td>2.8 GB</td></tr>
+      </table>
+    </section>
 
-        <p class="eyebrow">Destek Taleplerim</p>
-        <div class="card">
-          <div id="tickets" class="empty">Yükleniyor…</div>
-          <form class="newticket" id="ticket-form">
-            <div class="row">
-              <select id="t-cat"><option>BILLING</option><option>NETWORK</option><option>GENERAL</option></select>
-              <select id="t-pri"><option>LOW</option><option selected>MEDIUM</option><option>HIGH</option><option>CRITICAL</option></select>
-            </div>
-            <textarea id="t-desc" placeholder="Sorununuzu kısaca anlatın…" required></textarea>
-            <button class="btn" type="submit">Talep Aç</button>
-          </form>
+    <!-- INVOICES -->
+    <section class="view" id="view-invoices" data-screen-label="Faturalarım">
+      <div class="topbar"><div><h1>Faturalarım</h1><p>Geçmiş ve güncel faturalarını görüntüle.</p></div></div>
+      <table>
+        <tr><th>Dönem</th><th>Tutar</th><th>Son Ödeme</th><th>Durum</th><th></th></tr>
+        <tr id="invoice-current"><td>Temmuz 2026</td><td>₺482,50</td><td>28 Tem 2026</td><td><span class="status-pill pending">Bekliyor</span></td><td><button class="btn primary" id="pay-invoice-btn">Öde</button></td></tr>
+        <tr><td>Haziran 2026</td><td>₺445,00</td><td>28 Haz 2026</td><td><span class="status-pill paid">Ödendi</span></td><td><button class="btn ghost">PDF</button></td></tr>
+        <tr><td>Mayıs 2026</td><td>₺460,90</td><td>28 May 2026</td><td><span class="status-pill paid">Ödendi</span></td><td><button class="btn ghost">PDF</button></td></tr>
+        <tr><td>Nisan 2026</td><td>₺410,00</td><td>28 Nis 2026</td><td><span class="status-pill paid">Ödendi</span></td><td><button class="btn ghost">PDF</button></td></tr>
+      </table>
+    </section>
+
+    <!-- TICKETS -->
+    <section class="view" id="view-tickets" data-screen-label="Taleplerim">
+      <div class="topbar">
+        <div><h1>Taleplerim</h1><p>Destek taleplerini takip et, yenisini oluştur.</p></div>
+        <button class="btn primary" id="open-ticket">+ Yeni Talep</button>
+      </div>
+      <div class="ticket-list" id="ticket-list">
+        <div class="ticket">
+          <div><div class="t-title">Fatura kalemi anlaşılamadı</div><div class="t-meta">#TCK-2291 · 12 Tem 2026</div></div>
+          <span class="status-pill pending">Yanıt Bekleniyor</span>
+        </div>
+        <div class="ticket">
+          <div><div class="t-title">Paket değişikliği talebi</div><div class="t-meta">#TCK-2140 · 2 Tem 2026</div></div>
+          <span class="status-pill ok">Çözüldü</span>
+        </div>
+        <div class="ticket">
+          <div><div class="t-title">SIM kart arızası</div><div class="t-meta">#TCK-1988 · 18 Haz 2026</div></div>
+          <span class="status-pill ok">Çözüldü</span>
         </div>
       </div>
+    </section>
 
-      <div>
-        <p class="eyebrow">Bildirimlerim</p>
-        <div class="card"><div id="notifs" class="empty">Yükleniyor…</div></div>
-
-        <p class="eyebrow">İletişim Tercihlerim</p>
-        <div class="card">
-          <div class="prefs" id="prefs"><div class="empty">Yükleniyor…</div></div>
+    <!-- PROFILE -->
+    <section class="view" id="view-profile" data-screen-label="Profilim">
+      <div class="topbar"><div><h1>Profilim</h1><p>Kimlik ve iletişim bilgilerin.</p></div></div>
+      <div class="kv-card">
+        <div class="kv">
+          <div>Ad Soyad</div><div id="profile-name">Elif Aydın</div>
+          <div>MSISDN</div><div id="profile-msisdn">0532 417 47 12</div>
+          <div>Müşteri Türü</div><div>Bireysel</div>
+          <div>KYC Durumu</div><div><span class="status-pill ok">Onaylandı</span></div>
+          <div>E-posta</div><div>elif.aydin@example.com</div>
+          <div>İletişim Tercihi</div><div>SMS + E-posta</div>
         </div>
+      </div>
+      <button class="btn ghost" id="logout-btn" style="margin-top:18px;">Çıkış Yap</button>
+    </section>
+  </main>
+</div>
+
+<div class="modal-backdrop" id="purchase-backdrop">
+  <div class="modal">
+    <div id="modal-select-step">
+      <h2>Paket / Addon Satın Al</h2>
+      <p class="sub">Bir tarife veya addon seç — satın alma gerçek servis akışını tetikler.</p>
+      <div id="plan-options">
+        <label class="plan-opt" data-name="Ekonomik 20GB" data-price="₺249">
+          <input type="radio" name="plan">
+          <div><div class="p-name">Ekonomik 20GB</div><div class="p-meta">500 dk · 250 SMS · 20GB</div></div>
+          <div class="p-price">₺249</div>
+        </label>
+        <label class="plan-opt" data-name="Süper 40GB" data-price="₺389">
+          <input type="radio" name="plan">
+          <div><div class="p-name">Süper 40GB</div><div class="p-meta">1000 dk · 500 SMS · 40GB</div></div>
+          <div class="p-price">₺389</div>
+        </label>
+        <label class="plan-opt" data-name="Aile 60GB" data-price="₺499">
+          <input type="radio" name="plan">
+          <div><div class="p-name">Aile 60GB</div><div class="p-meta">2000 dk · 1000 SMS · 60GB</div></div>
+          <div class="p-price">₺499</div>
+        </label>
+        <label class="plan-opt" data-name="Bulut Depolama 5GB (Addon)" data-price="₺19">
+          <input type="radio" name="plan">
+          <div><div class="p-name">Bulut Depolama 5GB</div><div class="p-meta">VAS addon</div></div>
+          <div class="p-price">₺19</div>
+        </label>
+      </div>
+      <div class="modal-actions">
+        <button class="btn ghost" id="cancel-purchase">Vazgeç</button>
+        <button class="btn primary" id="confirm-purchase">Satın Al</button>
+      </div>
+    </div>
+    <div id="modal-ticket-step" style="display:none;">
+      <h2>Yeni Destek Talebi</h2>
+      <p class="sub">Talep, ticket-service üzerinden oluşturulur ve bildirim gönderilir.</p>
+      <div class="field"><label>Konu</label><input type="text" id="ticket-subject" placeholder="Örn: Faturamda anlamadığım bir kalem var"></div>
+      <div class="field"><label>Kategori</label><input type="text" id="ticket-category" value="Fatura" placeholder="Fatura / Teknik / Tarife"></div>
+      <div class="modal-actions">
+        <button class="btn ghost" id="cancel-ticket">Vazgeç</button>
+        <button class="btn primary" id="confirm-ticket">Talep Oluştur</button>
+      </div>
+    </div>
+    <div id="modal-saga-step" style="display:none;">
+      <h2 id="saga-title">Siparişin işleniyor</h2>
+      <p class="sub">Gerçek microservice akışı tetiklendi — her adım ilgili servisten geçiyor.</p>
+      <div class="saga-steps" id="saga-steps"></div>
+      <div class="modal-actions" id="saga-actions" style="display:none;">
+        <button class="btn primary" id="close-saga" style="width:100%;">Tamam</button>
       </div>
     </div>
   </div>
+</div>
+
+<div class="toast" id="toast"><span class="t-dot"></span><span id="toast-msg">İşlem tamamlandı</span></div>
 
 <script src="telcox-shared.js"></script>
 <script>
-const S = telcoxGuard('customer');
-if (S) init();
+  document.querySelectorAll('[data-view]').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      const v = el.getAttribute('data-view');
+      document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active', n.getAttribute('data-view')===v));
+      document.querySelectorAll('.view').forEach(s=>s.classList.toggle('active', s.id==='view-'+v));
+      window.scrollTo(0,0);
+    });
+  });
 
-const TPL_TR = {
-  QUOTA_WARNING_80:'Paket kullanımınız %80 seviyesine ulaştı', QUOTA_EXCEEDED:'Paket kotanız doldu — ek paket önerisi',
-  INVOICE_GENERATED:'Faturanız oluşturuldu', PAYMENT_RECEIVED:'Ödemeniz alındı', PAYMENT_FAILED:'Ödemeniz alınamadı',
-  WELCOME_SMS:'Hoş geldiniz! Hattınız aktif', CUSTOMER_WELCOME:'TelcoX ailesine hoş geldiniz',
-  TICKET_OPENED:'Destek talebiniz alındı', TICKET_RESOLVED:'Destek talebiniz çözüldü',
-};
-const ST_TR = { PENDING:['BEKLİYOR','warn'], PAID:['ÖDENDİ','ok'], OVERDUE:['GECİKMİŞ','crit'],
-  OPEN:['AÇIK','info'], IN_PROGRESS:['İŞLEMDE','info'], RESOLVED:['ÇÖZÜLDÜ','ok'], CLOSED:['KAPALI','warn'],
-  SENT:['GÖNDERİLDİ','ok'], SKIPPED:['TERCİH KAPALI','warn'] };
-const pill = (st) => { const [t,c] = ST_TR[st] || [st,'info']; return `<span class="pill ${c}">${t}</span>`; };
-const fail = (el,r) => el.innerHTML = `<div class="err">Yüklenemedi (${r.status||'ağ'}): ${esc(typeof r.data==='object'?(r.data?.detail||r.data?.error||''):r.data).slice(0,120)}</div>`;
+  // ---- Session guard (giriş TelcoX.html üzerinden) ----
+  function initials(name){
+    return name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  }
+  function showApp(session){
+    document.getElementById('app-root').style.display = 'grid';
+    document.getElementById('chip-name').textContent = session.name;
+    document.getElementById('chip-msisdn').textContent = session.msisdn;
+    document.getElementById('profile-name').textContent = session.name;
+    document.getElementById('profile-msisdn').textContent = session.msisdn;
+    document.getElementById('avatar-initials').textContent = initials(session.name);
+    document.querySelector('#view-home h1').textContent = 'Merhaba, ' + session.name.split(' ')[0] + ' 👋';
+    const st = telcoxGetState();
+    if(st.activePlan) document.getElementById('active-plan-name').textContent = st.activePlan;
+    if(st.invoicePaid) markInvoicePaid();
+    (st.tickets || []).forEach(t=>prependTicket(t));
+    updateTicketCard();
+  }
+  (function(){
+    const existing = telcoxGetSession();
+    if(existing && existing.loggedIn){ showApp(existing); }
+    else { window.location.href = 'TelcoX.html'; }
+  })();
+  document.getElementById('logout-btn').addEventListener('click', ()=>{
+    telcoxLogout();
+    window.location.href = 'TelcoX.html';
+  });
 
-async function init(){
-  document.getElementById('u-name').textContent = S.name;
-  document.getElementById('u-msisdn').textContent = S.msisdn || '';
-  document.getElementById('greet').textContent = `Merhaba ${S.name.split(' ')[0]} 👋`;
-  loadPlanAndQuota(); loadInvoices(); loadTickets(); loadNotifs(); loadPrefs();
-}
+  // ---- Toast ----
+  function showToast(msg){
+    const t = document.getElementById('toast');
+    document.getElementById('toast-msg').textContent = msg;
+    t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'), 3200);
+  }
 
-let TARIFF = null;
-async function loadPlanAndQuota(){
-  const subs = await api(`/api/v1/subscriptions/customers/${S.customerId}`);
-  const sub = asList(subs.data)[0];
-  if (!subs.ok || !sub) { document.getElementById('plan-name').textContent = 'Abonelik bulunamadı'; return; }
-  const t = await api(`/api/v1/tariffs/${sub.tariffCode}`);
-  TARIFF = t.ok ? t.data : null;
-  document.getElementById('plan-name').textContent = TARIFF?.name || sub.tariffCode;
-  document.getElementById('plan-fee').textContent = fmtTL(TARIFF?.monthlyFee);
-  document.getElementById('plan-chips').innerHTML =
-    `<span class="chip">${esc(TARIFF?.type||'')}</span>` +
-    (TARIFF?.targetSegment ? `<span class="chip">${esc(TARIFF.targetSegment)} segmenti</span>` : '') +
-    (TARIFF?.version>1 ? `<span class="chip">v${TARIFF.version} — güncellendi</span>` : '') +
-    `<span class="chip">${esc(sub.status)}</span>`;
+  // ---- generic saga runner in modal ----
+  function runSagaInModal(steps, title, onFinish){
+    backdrop.classList.add('open');
+    selectStep.style.display = 'none';
+    document.getElementById('modal-ticket-step').style.display = 'none';
+    sagaStep.style.display = 'block';
+    document.getElementById('saga-title').textContent = title;
+    document.getElementById('saga-actions').style.display = 'none';
+    const stepsEl = document.getElementById('saga-steps');
+    stepsEl.innerHTML = steps.map((s,i)=>`
+      <div class="saga-step" id="saga-step-${i}">
+        <div class="s-dot">${i+1}</div>
+        <div>${s.label} <span style="color:var(--ink-soft);font-weight:400;">— ${s.service}</span></div>
+      </div>`).join('');
+    telcoxRunSaga(steps, (i)=>{
+      const el = document.getElementById('saga-step-'+i);
+      el.classList.add('active');
+      el.querySelector('.s-dot').innerHTML = '<span class="spinner"></span>';
+    }, ()=>{
+      steps.forEach((s,i)=>{
+        const el = document.getElementById('saga-step-'+i);
+        el.classList.remove('active'); el.classList.add('done');
+        el.querySelector('.s-dot').innerHTML = '✓';
+      });
+      document.getElementById('saga-title').textContent = 'Tamamlandı';
+      document.getElementById('saga-actions').style.display = 'flex';
+      onFinish && onFinish();
+    }, 700);
+    setTimeout(()=>{
+      const el0 = document.getElementById('saga-step-0');
+      if(el0 && !el0.classList.contains('done')){ el0.classList.add('active'); el0.querySelector('.s-dot').innerHTML='<span class="spinner"></span>'; }
+    }, 30);
+  }
 
-  const q = await api(`/api/v1/usage/subscriptions/${sub.id}/quota`);
-  const row = document.getElementById('quota-row');
-  if (!q.ok) { row.innerHTML = `<div class="q-note">Kota bilgisi alınamadı (usage-service: ${q.status})</div>`; return; }
-  const Q = q.data, tot = { mb:TARIFF?.dataMbIncluded||1, min:TARIFF?.minutesIncluded||1, sms:TARIFF?.smsIncluded||1 };
-  const meter = (label, rem, total, unitFn) => {
-    const used = Math.max(0, Math.min(100, Math.round(100*(1-rem/total))));
-    const cls = used>=100?'crit':used>=80?'warn':'';
-    const warned = used>=80 ? `<div class="q-note warned">%80 eşiği aşıldı — uyarı SMS'i gönderildi</div>` : `<div class="q-note">Dönem sonu: ${fmtDate(Q.periodEnd)}</div>`;
-    return `<div><div class="q-head"><b>${label}</b><span>${unitFn(rem)} / ${unitFn(total)} kaldı</span></div>
-      <div class="bar"><div class="fill ${cls}" style="width:${used}%"></div><div class="mark"></div></div>${warned}</div>`;
-  };
-  row.innerHTML =
-    meter('İnternet', Q.mbRemaining, tot.mb, v => v>=1024 ? (v/1024).toFixed(1)+' GB' : v+' MB') +
-    meter('Dakika', Q.minutesRemaining, tot.min, v => v+' dk') +
-    meter('SMS', Q.smsRemaining, tot.sms, v => v);
-}
+  // ---- Purchase modal ----
+  const backdrop = document.getElementById('purchase-backdrop');
+  const selectStep = document.getElementById('modal-select-step');
+  const sagaStep = document.getElementById('modal-saga-step');
+  let selectedPlan = null;
 
-async function loadInvoices(){
-  const el = document.getElementById('invoices');
-  const r = await api(`/api/v1/invoices/customer/${S.customerId}`);
-  if (!r.ok) return fail(el, r);
-  const rows = asList(r.data);
-  if (!rows.length) return el.innerHTML = '<div class="empty">Henüz faturanız yok.</div>';
-  el.outerHTML = `<table><thead><tr><th>Dönem</th><th style="text-align:right">Tutar</th><th>Son Ödeme</th><th>Durum</th></tr></thead><tbody>` +
-    rows.map(i => `<tr><td>${fmtDate(i.periodStart)} – ${fmtDate(i.periodEnd)}</td><td class="num">${fmtTL(i.grandTotal)}</td><td>${fmtDate(i.dueDate)}</td><td>${pill(i.status)}</td></tr>`).join('') +
-    `</tbody></table>`;
-}
+  document.getElementById('open-purchase').addEventListener('click', ()=>{
+    backdrop.classList.add('open');
+    selectStep.style.display = 'block';
+    sagaStep.style.display = 'none';
+    document.getElementById('modal-ticket-step').style.display = 'none';
+  });
+  document.getElementById('cancel-purchase').addEventListener('click', ()=> backdrop.classList.remove('open'));
+  backdrop.addEventListener('click', (e)=>{ if(e.target === backdrop) backdrop.classList.remove('open'); });
 
-async function loadTickets(){
-  const el = document.getElementById('tickets');
-  const r = await api(`/api/v1/tickets?customerId=${S.customerId}&size=10`);
-  if (!r.ok) return fail(el, r);
-  const rows = asList(r.data);
-  el.innerHTML = rows.length
-    ? `<ul class="list">` + rows.map(t => `<li>${pill(t.status)}<span class="body">${esc(t.category)} · ${esc(t.priority)}<small>${t.assignedTeam?esc(t.assignedTeam)+' · ':''}SLA: ${fmtDT(t.slaDueAt)}</small></span><span class="when">${fmtDT(t.createdAt)}</span></li>`).join('') + `</ul>`
-    : '<div class="empty">Açık destek talebiniz yok.</div>';
-}
-document.getElementById('ticket-form').addEventListener('submit', async (e)=>{
-  e.preventDefault();
-  const r = await api('/api/v1/tickets', { method:'POST', body: JSON.stringify({
-    customerId: S.customerId, category: document.getElementById('t-cat').value,
-    priority: document.getElementById('t-pri').value, description: document.getElementById('t-desc').value })});
-  if (r.ok) { document.getElementById('t-desc').value=''; loadTickets(); }
-  else alert('Talep açılamadı: ' + (r.data?.detail || r.status));
-});
+  document.querySelectorAll('.plan-opt').forEach(opt=>{
+    opt.addEventListener('click', ()=>{
+      document.querySelectorAll('.plan-opt').forEach(o=>o.classList.remove('selected'));
+      opt.classList.add('selected');
+      opt.querySelector('input').checked = true;
+      selectedPlan = {name: opt.getAttribute('data-name'), price: opt.getAttribute('data-price')};
+    });
+  });
 
-async function loadNotifs(){
-  const el = document.getElementById('notifs');
-  const r = await api(`/api/v1/notifications?userId=${S.customerId}&size=8`);
-  if (!r.ok) return fail(el, r);
-  const rows = asList(r.data);
-  el.innerHTML = rows.length
-    ? `<ul class="list">` + rows.map(n => `<li><span class="pill ${n.channel==='EMAIL'?'info':'ok'}">${esc(n.channel)}</span><span class="body">${esc(TPL_TR[n.templateCode]||n.templateCode)}${n.status==='SKIPPED'?'<small>tercih kapalı olduğu için gönderilmedi</small>':''}</span><span class="when">${fmtDT(n.sentAt)}</span></li>`).join('') + `</ul>`
-    : '<div class="empty">Bildiriminiz yok.</div>';
-}
+  function sagaStepsFor(plan){
+    const isAddon = plan.name.includes('Addon');
+    const code = plan.name.includes('Ekonomik') ? 'TRF-EKO20' : plan.name.includes('Süper') ? 'TRF-SUP40' : plan.name.includes('Aile') ? 'TRF-AIL60' : 'ADD-CLOUD5';
+    if(isAddon){
+      return [
+        {service:'order-service', message:`POST /api/v1/orders — OrderCreated (productCode: ${code}, type: ADDON)`, label:'Sipariş oluşturuluyor'},
+        {service:'payment-service', message:`POST /api/v1/payments/{id}/process — ${plan.price} tahsil, payment.completed yayınlandı`, label:'Ödeme işleniyor'},
+        {service:'usage-service', message:'POST /api/v1/usage/quotas — addon kotası tanımlandı', label:'Kota güncelleniyor'},
+        {service:'notification-service', message:'payment.completed tüketildi — onay SMS gönderildi', label:'Bildirim gönderiliyor'},
+      ];
+    }
+    return [
+      {service:'order-service', message:`POST /api/v1/orders — OrderCreated (productCode: ${code}, type: TARIFF) · outbox→Kafka`, label:'Sipariş oluşturuluyor (Saga başladı)'},
+      {service:'payment-service', message:`POST /api/v1/payments/{id}/process — ${plan.price} tahsil, payment.completed yayınlandı`, label:'Ödeme işleniyor (Idempotency-Key)'},
+      {service:'subscription-service', message:`payment.completed tüketildi — POST /api/v1/subscriptions · subscription.activated (${code})`, label:'Abonelik aktifleştiriliyor'},
+      {service:'usage-service', message:'POST /api/v1/usage/quotas — yeni dönem kotası oluşturuldu', label:'Kota tanımlanıyor'},
+      {service:'notification-service', message:'payment.completed tüketildi — hoş geldin SMS gönderildi', label:'Bildirim gönderiliyor'},
+    ];
+  }
 
-const PREF_META = { SMS:'Kota uyarıları, ödeme ve talep bildirimleri', EMAIL:'Fatura ve dönem özetleri', PUSH:'Uygulama bildirimleri' };
-async function loadPrefs(){
-  const el = document.getElementById('prefs');
-  const r = await api(`/api/v1/notifications/preferences/${S.customerId}`);
-  if (!r.ok) return fail(el, r);
-  const map = {}; asList(r.data).forEach(p => map[p.channel] = p.optedOut);
-  el.innerHTML = Object.keys(PREF_META).map(ch => {
-    const off = map[ch] === true;
-    return `<div class="pref-row"><div><div class="name">${ch}</div><div class="desc">${PREF_META[ch]}</div></div>
-      <button class="switch ${off?'off':''}" data-ch="${ch}" data-off="${off}" role="switch" aria-checked="${!off}" aria-label="${ch} bildirimleri"></button></div>`;
-  }).join('');
-  el.querySelectorAll('.switch').forEach(sw => sw.addEventListener('click', async ()=>{
-    const ch = sw.dataset.ch, newOff = sw.dataset.off !== 'true';
-    const r2 = await api(`/api/v1/notifications/preferences/${S.customerId}`, { method:'PUT', body: JSON.stringify({channel:ch, optedOut:newOff})});
-    if (r2.ok) loadPrefs(); else alert('Tercih güncellenemedi: ' + r2.status);
-  }));
-}
+  document.getElementById('confirm-purchase').addEventListener('click', ()=>{
+    if(!selectedPlan){ showToast('Lütfen bir paket seç'); return; }
+    const plan = selectedPlan;
+    runSagaInModal(sagaStepsFor(plan), 'Siparişin işleniyor', ()=>{
+      if(!plan.name.includes('Addon')){
+        telcoxSetState({activePlan: plan.name});
+        document.getElementById('active-plan-name').textContent = plan.name;
+      }
+      const st = telcoxGetState();
+      telcoxSetState({purchases: [...(st.purchases || []), {name: plan.name, price: plan.price, ts: telcoxNow(), date: new Date().toLocaleDateString('tr-TR', {day:'numeric', month:'short', year:'numeric'})}]});
+      showToast(`"${plan.name}" başarıyla işleme alındı`);
+    });
+  });
+
+  document.getElementById('close-saga').addEventListener('click', ()=>{
+    backdrop.classList.remove('open');
+    document.querySelectorAll('.plan-opt').forEach(o=>o.classList.remove('selected'));
+    document.querySelectorAll('.plan-opt input').forEach(i=>i.checked=false);
+    selectedPlan = null;
+  });
+
+  // ---- Invoice payment ----
+  function markInvoicePaid(){
+    const row = document.getElementById('invoice-current');
+    if(!row) return;
+    row.querySelector('.status-pill').className = 'status-pill paid';
+    row.querySelector('.status-pill').textContent = 'Ödendi';
+    const btn = document.getElementById('pay-invoice-btn');
+    if(btn){ btn.className = 'btn ghost'; btn.textContent = 'PDF'; btn.id = ''; }
+    document.getElementById('home-invoice-amount').textContent = '₺0,00';
+    document.getElementById('home-invoice-meta').textContent = 'Temmuz faturası ödendi ✓';
+  }
+  document.addEventListener('click', (e)=>{
+    if(e.target.id !== 'pay-invoice-btn') return;
+    runSagaInModal([
+      {service:'payment-service', message:'POST /api/v1/payments — ₺482,50 (Idempotency-Key: UUID)', label:'Ödeme oluşturuluyor'},
+      {service:'payment-service', message:'POST /api/v1/payments/{id}/process — payment.completed yayınlandı', label:'Ödeme işleniyor'},
+      {service:'billing-service', message:'PATCH /api/v1/invoices/{id}/status?status=PAID — Temmuz 2026 kapatıldı', label:'Fatura kapatılıyor'},
+      {service:'notification-service', message:'payment.completed tüketildi — makbuz SMS/e-posta gönderildi', label:'Makbuz gönderiliyor'},
+    ], 'Fatura ödemesi işleniyor', ()=>{
+      telcoxSetState({invoicePaid:true});
+      markInvoicePaid();
+      showToast('Temmuz 2026 faturası ödendi');
+    });
+  });
+
+  // ---- New ticket ----
+  const ticketCounter = ()=> 2291 + ((telcoxGetState().tickets || []).length + 1);
+  function prependTicket(t){
+    const list = document.getElementById('ticket-list');
+    const el = document.createElement('div');
+    el.className = 'ticket';
+    el.innerHTML = `<div><div class="t-title"></div><div class="t-meta">#TCK-${t.id} · ${t.date} · ${t.category}</div></div><span class="status-pill pending">Yanıt Bekleniyor</span>`;
+    el.querySelector('.t-title').textContent = t.subject;
+    list.prepend(el);
+  }
+  function updateTicketCard(){
+    const open = 1 + (telcoxGetState().tickets || []).length;
+    document.getElementById('home-ticket-count').textContent = open + ' talep';
+    if(open > 1) document.getElementById('home-ticket-meta').textContent = 'Yanıt bekleniyor · ' + open + ' açık talep';
+  }
+  document.getElementById('open-ticket').addEventListener('click', ()=>{
+    backdrop.classList.add('open');
+    selectStep.style.display = 'none';
+    sagaStep.style.display = 'none';
+    document.getElementById('modal-ticket-step').style.display = 'block';
+  });
+  document.getElementById('cancel-ticket').addEventListener('click', ()=>{
+    backdrop.classList.remove('open');
+    document.getElementById('modal-ticket-step').style.display = 'none';
+  });
+  document.getElementById('confirm-ticket').addEventListener('click', ()=>{
+    const subject = document.getElementById('ticket-subject').value.trim();
+    if(!subject){ showToast('Lütfen bir konu yaz'); return; }
+    const category = document.getElementById('ticket-category').value.trim() || 'Genel';
+    const t = {id: ticketCounter(), subject, category, date: new Date().toLocaleDateString('tr-TR', {day:'numeric', month:'short', year:'numeric'})};
+    runSagaInModal([
+      {service:'ticket-service', message:`POST /api/v1/tickets — #TCK-${t.id} "${subject}" (${category})`, label:'Talep oluşturuluyor'},
+      {service:'customer-service', message:`GET /api/v1/customers/{customerId} — müşteri doğrulandı (#TCK-${t.id})`, label:'Müşteri doğrulanıyor'},
+      {service:'notification-service', message:`POST /api/v1/notifications/send — talep onayı gönderildi (#TCK-${t.id})`, label:'Onay gönderiliyor'},
+    ], 'Talebin oluşturuluyor', ()=>{
+      const st = telcoxGetState();
+      telcoxSetState({tickets: [...(st.tickets || []), t]});
+      prependTicket(t);
+      updateTicketCard();
+      document.getElementById('ticket-subject').value = '';
+      showToast(`#TCK-${t.id} talebi oluşturuldu`);
+    });
+  });
 </script>
+<script src="portal-usage.js"></script>
+<script src="portal-paket.js"></script>
+<script src="portal-market.js"></script>
+<script src="portal-real.js"></script>
 </body>
 </html>

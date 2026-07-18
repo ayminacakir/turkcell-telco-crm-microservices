@@ -14,4 +14,5 @@ public interface UsageService {
     List<UsageRecordResponse> getHistory(UUID subscriptionId, LocalDateTime from, LocalDateTime to);
     QuotaResponse getActiveQuota(UUID subscriptionId);
     QuotaResponse createQuota(CreateQuotaRequest request);
+    QuotaResponse resetQuota(java.util.UUID subscriptionId, int minutes, int sms, int mb);
 }

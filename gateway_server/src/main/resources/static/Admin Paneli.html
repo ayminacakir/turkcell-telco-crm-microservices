@@ -5,278 +5,433 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TelcoX | Operasyon Konsolu</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --navy:oklch(24% 0.05 262); --ink:oklch(22% 0.02 265); --ink-soft:oklch(45% 0.02 265);
-    --line:oklch(90% 0.006 265); --bg:oklch(97.5% 0.004 265);
-    --primary:#0057FF; --primary-dark:#0041BF; --primary-soft:#E8F0FF; --accent:#00B8FF;
-    --good:#1DB954; --good-soft:#E3F7EA; --warn:#B75E00; --warn-soft:#FFF1DC;
-    --crit:#C22F2F; --crit-soft:#FBE7E7; --console:#0A1128; --console-ink:#9FD8CF;
+    --primary:#0057FF; --primary-soft:#E8F0FF; --success:#1DB954; --danger:#FF3B30; --warning:#FFB300; --info:#00B8FF;
+    --bg:#F7F9FC; --panel:#FFFFFF; --panel-2:#F0F4FA; --line:#E3E9F2;
+    --ink:#16202E; --ink-dim:#64748B;
+    --mono:'JetBrains Mono',monospace;
+    --shadow:0 1px 3px rgba(22,32,46,.06);
   }
-  *{box-sizing:border-box;} body{margin:0;font-family:'Public Sans',sans-serif;color:var(--ink);background:var(--bg);}
+  [data-theme="dark"]{
+    --bg:#121212; --panel:#1C1E22; --panel-2:#25282E; --line:#31353D;
+    --ink:#E8ECF2; --ink-dim:#8B95A5;
+    --primary-soft:#12264D;
+    --shadow:0 1px 3px rgba(0,0,0,.4);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Public Sans',sans-serif;background:var(--bg);color:var(--ink);}
   h1,h2,h3,.brand{font-family:'Sora',sans-serif;}
-  .top{background:linear-gradient(90deg,#0A1128,#101B3E);color:white;display:flex;align-items:center;gap:14px;padding:14px 28px;position:sticky;top:0;z-index:5;}
-  .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px;}
-  .brand .dot{width:11px;height:11px;border-radius:4px;background:var(--accent);}
-  .top .tag{font-size:11px;font-weight:700;letter-spacing:.07em;background:rgba(255,255,255,.12);padding:4px 11px;border-radius:999px;}
-  .userchip{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:13px;}
-  .btn-ghost{border:1px solid rgba(255,255,255,.3);background:none;border-radius:9px;padding:7px 13px;font:inherit;font-size:13px;font-weight:600;color:white;cursor:pointer;}
-  .wrap{max-width:1180px;margin:0 auto;padding:26px 24px 80px;}
-  .eyebrow{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin:26px 0 10px;}
-  .card{background:white;border:1px solid var(--line);border-radius:14px;padding:18px;}
-  .grid-health{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;}
-  .svc{background:white;border:1px solid var(--line);border-radius:12px;padding:13px 15px;display:flex;flex-direction:column;gap:6px;}
-  .svc-head{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13.5px;font-family:'Sora',sans-serif;}
-  .dot{width:9px;height:9px;border-radius:50%;flex:none;background:var(--line);}
-  .dot.up{background:var(--good);} .dot.down{background:var(--crit);} .dot.unk{background:var(--warn);}
-  .svc .meta{font-size:11.5px;color:var(--ink-soft);}
-  .pill{font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:999px;margin-left:auto;}
-  .pill.up{background:var(--good-soft);color:var(--good);} .pill.down{background:var(--crit-soft);color:var(--crit);}
-  .pill.unk{background:var(--warn-soft);color:var(--warn);}
-  .cols2{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;}
-  @media(max-width:900px){.cols2{grid-template-columns:1fr;}}
-  label{display:block;font-size:11.5px;font-weight:600;color:var(--ink-soft);margin:9px 0 4px;}
-  input,select,textarea{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:13px;background:white;}
-  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-  .btn{margin-top:12px;padding:9px 15px;border:none;border-radius:9px;background:var(--primary);color:white;font-family:'Sora',sans-serif;font-weight:700;font-size:12.5px;cursor:pointer;}
-  .btn:hover{background:var(--primary-dark);}
-  .btn.sec{background:white;color:var(--primary);border:1px solid var(--primary);}
-  table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:8px;}
-  th,td{text-align:left;padding:8px 10px;border-top:1px solid var(--line);}
-  thead th{border-top:none;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);}
-  td.num{text-align:right;font-variant-numeric:tabular-nums;}
-  .tbl-scroll{overflow-x:auto;}
-  .console{position:fixed;left:0;right:0;bottom:0;background:var(--console);color:var(--console-ink);font-family:ui-monospace,Menlo,monospace;font-size:12px;padding:10px 24px;max-height:130px;overflow:auto;border-top:3px solid var(--accent);}
-  .console b{color:#7FB8E8;}
-  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
-  .mini{font-size:11.5px;padding:6px 11px;margin-top:0;}
+  a{color:var(--primary);text-decoration:none;}a:hover{opacity:.85;}
+  .mono{font-family:var(--mono);}.dim{color:var(--ink-dim);font-size:12px;}
+
+  .shell{display:grid;grid-template-columns:232px 1fr;grid-template-rows:58px 1fr;min-height:100vh;grid-template-areas:"side top" "side main";}
+  .topbar{grid-area:top;background:var(--panel);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;padding:0 22px;position:sticky;top:0;z-index:20;}
+  #page-title{font-family:'Sora',sans-serif;font-weight:700;font-size:15.5px;margin-right:6px;}
+  .search{flex:1;max-width:380px;display:flex;align-items:center;gap:8px;background:var(--panel-2);border:1px solid var(--line);border-radius:9px;padding:7px 12px;}
+  .search input{border:none;background:none;outline:none;font-family:inherit;font-size:13px;color:var(--ink);width:100%;}
+  .top-actions{margin-left:auto;display:flex;align-items:center;gap:8px;}
+  .icon-btn{position:relative;width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--panel);color:var(--ink-dim);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;}
+  .icon-btn:hover{border-color:var(--primary);color:var(--primary);}
+  .icon-btn .n-badge{position:absolute;top:-5px;right:-5px;background:var(--danger);color:white;font-size:10px;font-weight:700;min-width:16px;height:16px;border-radius:99px;display:flex;align-items:center;justify-content:center;padding:0 4px;}
+  .profile-chip{display:flex;align-items:center;gap:8px;padding:4px 10px 4px 4px;border:1px solid var(--line);border-radius:99px;background:var(--panel);}
+  .avatar{width:26px;height:26px;border-radius:50%;background:var(--primary);color:white;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+  .profile-chip span{font-size:12.5px;font-weight:600;}
+
+  .sidebar{grid-area:side;background:var(--panel);border-right:1px solid var(--line);padding:16px 12px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;}
+  .brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:16px;padding:6px 10px 16px;}
+  .brand .dot{width:9px;height:9px;border-radius:3px;background:var(--primary);}
+  .brand small{font-family:'Public Sans',sans-serif;font-weight:600;font-size:10px;color:var(--ink-dim);letter-spacing:.08em;display:block;}
+  .nav-label{font-size:10.5px;color:var(--ink-dim);text-transform:uppercase;letter-spacing:.07em;font-weight:700;margin:12px 10px 4px;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:8.5px 11px;border-radius:8px;color:var(--ink-dim);font-weight:600;font-size:13.5px;cursor:pointer;border:none;background:none;text-align:left;width:100%;}
+  .nav-item:hover{background:var(--panel-2);color:var(--ink);}
+  .nav-item.active{background:var(--primary-soft);color:var(--primary);}
+  [data-theme="dark"] .nav-item.active{color:#7EA6FF;}
+  .nav-item .ic{width:16px;height:16px;flex-shrink:0;}
+  .nav-item .badge{margin-left:auto;font-size:10.5px;font-weight:700;background:var(--danger);color:white;padding:1px 6px;border-radius:99px;}
+
+  .main{grid-area:main;padding:24px 28px;max-width:1340px;width:100%;}
+  .view{display:none;}.view.active{display:block;}
+  .sec-h{display:flex;justify-content:space-between;align-items:center;margin:22px 0 12px;}
+  .sec-h h2{font-size:15px;margin:0;}
+
+  .stat-row{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:20px;}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow);}
+  .stat .l{font-size:11px;color:var(--ink-dim);font-weight:600;text-transform:uppercase;letter-spacing:.04em;}
+  .stat .v{font-size:21px;font-weight:700;font-family:var(--mono);margin-top:7px;}
+  .stat .v.warn{color:var(--warning);}
+
+  .dash-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;box-shadow:var(--shadow);}
+  .card h3{font-size:13px;margin:0 0 12px;color:var(--ink-dim);font-weight:700;text-transform:uppercase;letter-spacing:.04em;}
+  .chart-svg{width:100%;height:140px;display:block;}
+  .legend{display:flex;gap:16px;margin-top:8px;font-size:11.5px;color:var(--ink-dim);}
+  .legend i{width:9px;height:9px;border-radius:2px;display:inline-block;margin-right:5px;}
+
+  .strip{display:flex;flex-wrap:wrap;gap:8px;}
+  .strip-item{display:flex;align-items:center;gap:7px;padding:7px 12px;border-radius:99px;border:1px solid var(--line);background:var(--panel);font-family:var(--mono);font-size:12px;color:var(--ink);cursor:pointer;font-weight:500;}
+  .strip-item:hover{border-color:var(--primary);}
+  .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .dot.up{background:var(--success);box-shadow:0 0 6px var(--success);}
+  .dot.degraded{background:var(--warning);}
+  .dot.down{background:var(--danger);animation:blink 1.2s infinite;}
+  @keyframes blink{50%{opacity:.3;}}
+
+  table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);}
+  th,td{text-align:left;padding:10px 14px;font-size:13px;border-bottom:1px solid var(--line);}
+  th{color:var(--ink-dim);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.03em;background:var(--panel-2);}
+  tr:last-child td{border-bottom:none;}
+
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:700;}
+  .pill .d{width:6px;height:6px;border-radius:50%;}
+  .pill.up{background:color-mix(in srgb,var(--success) 14%,transparent);color:var(--success);}.pill.up .d{background:var(--success);}
+  .pill.degraded{background:color-mix(in srgb,var(--warning) 16%,transparent);color:var(--warning);}.pill.degraded .d{background:var(--warning);}
+  .pill.down{background:color-mix(in srgb,var(--danger) 14%,transparent);color:var(--danger);}.pill.down .d{background:var(--danger);}
+
+  .event-row{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:12.5px;align-items:baseline;}
+  .event-row:last-child{border-bottom:none;}
+  .e-t{color:var(--ink-dim);font-size:11px;flex-shrink:0;width:60px;}
+  .e-svc{color:var(--primary);font-size:11px;flex-shrink:0;width:140px;}
+  .feed{max-height:280px;overflow-y:auto;}
+  .empty-note{padding:16px 0;color:var(--ink-dim);font-size:12.5px;text-align:center;}
+
+  .mini-alert{padding:9px 12px;border-radius:9px;font-size:12.5px;margin-bottom:8px;border:1px solid var(--line);}
+  .mini-alert.critical{border-color:color-mix(in srgb,var(--danger) 40%,transparent);background:color-mix(in srgb,var(--danger) 7%,transparent);}
+  .mini-alert.warning{border-color:color-mix(in srgb,var(--warning) 40%,transparent);background:color-mix(in srgb,var(--warning) 8%,transparent);}
+
+  /* monitoring */
+  .kube-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px;}
+  .svc-toolbar{display:flex;justify-content:space-between;align-items:center;margin:16px 0 12px;flex-wrap:wrap;gap:10px;}
+  .sum-pills{display:flex;gap:8px;}
+  .sum-pill{display:flex;align-items:center;gap:7px;background:var(--panel);border:1px solid var(--line);padding:7px 12px;border-radius:9px;font-size:12.5px;font-weight:600;}
+  .filters{display:flex;gap:6px;}
+  .filter-btn{padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink-dim);font-weight:600;font-size:12.5px;cursor:pointer;font-family:inherit;}
+  .filter-btn.active{background:var(--primary-soft);color:var(--primary);border-color:var(--primary);}
+  .svc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;}
+  .svc-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;cursor:pointer;box-shadow:var(--shadow);}
+  .svc-card:hover{border-color:var(--primary);}
+  .svc-card .row1{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;gap:8px;}
+  .svc-card .name{font-weight:700;font-size:13.5px;}
+  .svc-card .ctx{font-size:11.5px;color:var(--ink-dim);margin-top:2px;}
+  .metrics{display:flex;gap:14px;font-family:var(--mono);font-size:11.5px;color:var(--ink-dim);margin-top:8px;flex-wrap:wrap;}
+  .metrics b{color:var(--ink);font-weight:600;}
+
+  .guide-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:16px 0;}
+  .guide-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);}
+  .guide-card h3{font-size:13px;margin:0 0 10px;}
+  .guide-card ul{margin:0;padding-left:17px;display:flex;flex-direction:column;gap:7px;}
+  .guide-card li{font-size:12.5px;color:var(--ink-dim);line-height:1.5;}
+  .guide-card li b{color:var(--ink);font-weight:600;}
+
+  /* logs */
+  .log-toolbar{display:flex;gap:10px;margin-bottom:12px;}
+  .log-toolbar select{padding:8px 12px;border-radius:9px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-family:inherit;font-size:13px;}
+  .stream{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 16px;max-height:560px;overflow-y:auto;box-shadow:var(--shadow);}
+  .stream-line{display:flex;gap:12px;padding:7px 0;border-bottom:1px solid var(--line);font-size:12.5px;align-items:baseline;}
+  .stream-line:last-child{border-bottom:none;}
+  .lvl{font-family:var(--mono);font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:5px;flex-shrink:0;width:52px;text-align:center;}
+  .lvl.INFO{background:color-mix(in srgb,var(--info) 14%,transparent);color:var(--info);}
+  .lvl.WARN{background:color-mix(in srgb,var(--warning) 16%,transparent);color:var(--warning);}
+  .lvl.ERROR{background:color-mix(in srgb,var(--danger) 14%,transparent);color:var(--danger);}
+  .l-svc{font-family:var(--mono);font-size:11.5px;color:var(--primary);flex-shrink:0;width:160px;}
+
+  /* alarms */
+  .alarm{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--warning);border-radius:10px;padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow);}
+  .alarm.critical{border-left-color:var(--danger);}
+  .a-head{display:flex;align-items:center;gap:10px;margin-bottom:5px;}
+  .a-sev{font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;background:color-mix(in srgb,var(--warning) 16%,transparent);color:var(--warning);}
+  .alarm.critical .a-sev{background:color-mix(in srgb,var(--danger) 14%,transparent);color:var(--danger);}
+  .a-msg{font-size:13px;color:var(--ink-dim);margin-bottom:10px;}
+  .a-actions{display:flex;gap:8px;}
+  .mini-btn{padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);font-weight:600;font-size:12px;cursor:pointer;font-family:inherit;}
+  .mini-btn:hover{border-color:var(--primary);color:var(--primary);}
+
+  /* drawers */
+  .drawer-backdrop{position:fixed;inset:0;background:rgba(10,14,20,.55);display:none;justify-content:flex-end;z-index:50;}
+  .drawer-backdrop.open{display:flex;}
+  .drawer{width:440px;max-width:94vw;height:100%;background:var(--panel);border-left:1px solid var(--line);padding:24px;overflow-y:auto;}
+  .drawer h2{font-size:18px;margin:0 0 4px;}
+  .drawer .ctx{color:var(--ink-dim);font-size:12.5px;margin-bottom:16px;}
+  .drawer-close{float:right;background:none;border:none;color:var(--ink-dim);font-size:19px;cursor:pointer;}
+  .kv{display:grid;grid-template-columns:130px 1fr;gap:9px 0;font-size:13px;margin-bottom:18px;}
+  .kv div:nth-child(odd){color:var(--ink-dim);font-weight:600;}
+  .kv div:nth-child(even){font-family:var(--mono);}
+  .drawer-section{margin-bottom:20px;}
+  .drawer-section h3{font-size:11.5px;color:var(--ink-dim);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;}
+  .bar-track{height:7px;background:var(--panel-2);border-radius:99px;overflow:hidden;margin-bottom:14px;}
+  .bar-track div{height:100%;border-radius:99px;background:var(--primary);}
+  .log-line{font-family:var(--mono);font-size:11.5px;padding:7px 0;border-bottom:1px solid var(--line);color:var(--ink-dim);}
+  .log-line b{color:var(--ink);font-weight:600;}
+  .log-line.err{color:var(--danger);}.log-line.warn{color:var(--warning);}
+  .runbook-item{background:var(--panel-2);border-radius:9px;padding:10px 12px;margin-bottom:8px;font-size:12px;line-height:1.5;}
+  .runbook-item .issue{font-weight:700;color:var(--warning);margin-bottom:3px;}
+  .runbook-item .fix{color:var(--ink-dim);}
+  .op-buttons{display:flex;flex-direction:column;gap:7px;}
+  .op-btn{padding:9px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);font-weight:600;font-size:12.5px;cursor:pointer;font-family:inherit;text-align:left;}
+  .op-btn:hover{border-color:var(--primary);}
+  .op-btn:disabled{opacity:.4;cursor:not-allowed;}
+
+  /* AI assistant */
+  #ai-fab{position:fixed;bottom:24px;right:24px;width:52px;height:52px;border-radius:50%;background:var(--primary);color:white;border:none;font-size:21px;cursor:pointer;box-shadow:0 8px 24px rgba(0,87,255,.4);z-index:60;}
+  #ai-panel{position:fixed;bottom:88px;right:24px;width:360px;max-width:92vw;height:440px;background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:0 20px 50px rgba(10,14,20,.3);z-index:60;display:none;flex-direction:column;overflow:hidden;}
+  #ai-panel.open{display:flex;}
+  .ai-head{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line);font-family:'Sora',sans-serif;font-weight:700;font-size:14px;}
+  .ai-head .spark{width:26px;height:26px;border-radius:8px;background:var(--primary-soft);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:14px;}
+  #ai-close{margin-left:auto;background:none;border:none;color:var(--ink-dim);font-size:17px;cursor:pointer;}
+  #ai-msgs{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px;}
+  .ai-msg{max-width:85%;padding:10px 13px;border-radius:12px;font-size:12.5px;line-height:1.55;white-space:pre-wrap;}
+  .ai-msg.user{align-self:flex-end;background:var(--primary);color:white;border-bottom-right-radius:4px;}
+  .ai-msg.bot{align-self:flex-start;background:var(--panel-2);border-bottom-left-radius:4px;font-family:var(--mono);font-size:11.5px;}
+  #ai-form{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line);}
+  #ai-input{flex:1;padding:10px 12px;border-radius:9px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);font-family:inherit;font-size:13px;outline:none;}
+  #ai-form button{padding:0 16px;border-radius:9px;border:none;background:var(--primary);color:white;font-weight:700;cursor:pointer;font-family:inherit;}
+
+  @media (max-width:960px){
+    .shell{grid-template-columns:1fr;grid-template-areas:"top" "main";}
+    .sidebar{display:none;}
+    .stat-row{grid-template-columns:repeat(2,1fr);}
+    .dash-grid,.guide-grid,.kube-stats{grid-template-columns:1fr;}
+  }
 </style>
 </head>
 <body>
-  <header class="top">
-    <div class="brand"><span class="dot" style="background:var(--accent)"></span>TelcoX</div>
-    <span class="tag">OPERASYON KONSOLU</span>
-    <div class="userchip"><span id="u-name">—</span><button class="btn-ghost" onclick="telcoxLogout()">Çıkış</button></div>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>TelcoX<small>OPERASYON KONSOLU</small></span></div>
+    <div class="nav-label">Genel</div>
+    <button class="nav-item active" data-view="dashboard"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg><span>Dashboard</span></button>
+    <button class="nav-item" data-view="customers"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"></circle><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"></path><circle cx="18" cy="9" r="2.5"></circle><path d="M15.5 20c.3-2.6 2-4.5 4.5-5"></path></svg><span>Müşteriler</span></button>
+    <button class="nav-item" data-view="products"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7l9-4 9 4-9 4-9-4z"></path><path d="M3 7v10l9 4 9-4V7"></path></svg><span>Ürünler</span></button>
+    <button class="nav-item" data-view="orders"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6h15l-1.5 9h-12z"></path><circle cx="9" cy="20" r="1.5"></circle><circle cx="18" cy="20" r="1.5"></circle><path d="M6 6L5 3H2"></path></svg><span>Siparişler</span></button>
+    <button class="nav-item" data-view="billing"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="3" width="14" height="18" rx="2"></rect><path d="M9 8h6M9 12h6M9 16h4"></path></svg><span>Faturalama</span></button>
+    <button class="nav-item" data-view="tickets"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"></path></svg><span>Ticket Center</span></button>
+    <div class="nav-label">Operasyon</div>
+    <button class="nav-item" data-view="monitoring"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l3-8 4 16 3-8h4"></path></svg><span>Monitoring</span></button>
+    <button class="nav-item" data-view="logs"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 10h16M4 14h10M4 18h7"></path></svg><span>Logs</span></button>
+    <button class="nav-item" data-view="alarms"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 016 6c0 5 2 6 2 6H4s2-1 2-6a6 6 0 016-6z"></path><path d="M10 21h4"></path></svg><span>Alarm Merkezi</span><span class="badge" id="nav-alarm-badge">2</span></button>
+    <button class="nav-item" data-view="incidents"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 20h20L12 2z"></path><path d="M12 9v5M12 17.5v.5"></path></svg><span>Incident</span></button>
+    <button class="nav-item" id="admin-logout" style="margin-top:auto;"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"></path><path d="M16 17l5-5-5-5M21 12H9"></path></svg><span>Çıkış Yap</span></button>
+  </aside>
+
+  <header class="topbar">
+    <span id="page-title">Dashboard</span>
+    <div class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--ink-dim);"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4-4"></path></svg><input type="text" placeholder="Müşteri, sipariş, servis ara..."></div>
+    <div class="top-actions">
+      <button class="icon-btn" title="Alarmlar" onclick="goView('alarms')">🔔<span class="n-badge" id="alarm-badge">2</span></button>
+      <button class="icon-btn" id="theme-toggle" title="Tema"><span id="theme-icon">☾</span></button>
+      <div class="profile-chip"><div class="avatar">OP</div><span>Operasyon</span></div>
+    </div>
   </header>
 
-  <div class="wrap">
-    <p class="eyebrow">Servis Sağlığı — /actuator/health</p>
-    <div class="grid-health" id="health"></div>
+  <main class="main">
+    <!-- DASHBOARD -->
+    <section class="view active" id="view-dashboard" data-screen-label="Dashboard">
+      <div class="stat-row">
+        <div class="stat"><div class="l">Aktif Müşteri</div><div class="v" id="st-customers">—</div></div>
+        <div class="stat"><div class="l">Bugünkü Sipariş</div><div class="v" id="st-orders">—</div></div>
+        <div class="stat"><div class="l">Bugünkü Gelir</div><div class="v" id="st-revenue">—</div></div>
+        <div class="stat"><div class="l">Açık Ticket</div><div class="v" id="st-tickets">—</div></div>
+        <div class="stat"><div class="l">Aktif Servis</div><div class="v warn" id="st-services">—</div></div>
+        <div class="stat"><div class="l">Error Rate</div><div class="v" id="st-error">—</div></div>
+      </div>
+      <div class="card" style="margin-bottom:16px;">
+        <h3>Service Status <span class="dim" style="text-transform:none;font-weight:500;">— tıkla: detay</span></h3>
+        <div class="strip" id="svc-strip"></div>
+      </div>
+      <div class="dash-grid">
+        <div class="card">
+          <h3>Revenue — canlı</h3>
+          <svg class="chart-svg" id="revenue-chart" viewBox="0 0 600 140" preserveAspectRatio="none"></svg>
+        </div>
+        <div class="card">
+          <h3>Alerts</h3>
+          <div id="alerts-mini"></div>
+        </div>
+      </div>
+      <div class="sec-h"><h2>Realtime Activity</h2><span class="dim">portaldan gelen işlemler canlı düşer</span></div>
+      <div class="card feed" id="activity-feed"></div>
+      <div class="sec-h"><h2>Recent Orders</h2></div>
+      <table id="recent-orders"></table>
+    </section>
 
-    <p class="eyebrow">Katalog Yönetimi</p>
-    <div class="cols2">
-      <div class="card">
-        <h3 style="margin:0 0 4px;font-size:15px;">Tarifeler</h3>
-        <div class="tbl-scroll" id="tariffs">Yükleniyor…</div>
+    <!-- CUSTOMERS -->
+    <section class="view" id="view-customers" data-screen-label="Müşteriler">
+      <div class="sec-h"><h2>Kayıtlı Müşteriler</h2><span class="dim">detay ve işlem logları için satıra tıkla</span></div>
+      <table id="customers-table">
+        <tr><th>Ad Soyad</th><th>MSISDN</th><th>Tarife</th><th>KYC</th><th>Durum</th></tr>
+        <tr data-customer="elif" style="cursor:pointer;"><td>Elif Aydın</td><td class="mono">0532 417 47 12</td><td id="elif-tariff">Süper 40GB</td><td><span class="pill up"><span class="d"></span>Onaylı</span></td><td>Aktif</td></tr>
+        <tr data-customer="kerem" style="cursor:pointer;"><td>Kerem Şahin</td><td class="mono">0533 210 98 45</td><td>Ekonomik 20GB</td><td><span class="pill up"><span class="d"></span>Onaylı</span></td><td>Aktif</td></tr>
+        <tr data-customer="zeynep" style="cursor:pointer;"><td>Zeynep Kaya</td><td class="mono">0541 887 12 03</td><td>Süper 40GB</td><td><span class="pill degraded"><span class="d"></span>Beklemede</span></td><td>Askıda</td></tr>
+        <tr data-customer="burak" style="cursor:pointer;"><td>Burak Er</td><td class="mono">0555 302 44 91</td><td>Aile 60GB</td><td><span class="pill up"><span class="d"></span>Onaylı</span></td><td>Aktif</td></tr>
+      </table>
+    </section>
+
+    <!-- PRODUCTS -->
+    <section class="view" id="view-products" data-screen-label="Ürünler">
+      <div class="sec-h"><h2>Ürün Kataloğu</h2><span class="dim">product-catalog-service · /api/v1/tariffs · /api/v1/addons</span></div>
+      <table>
+        <tr><th>Kod</th><th>Ad</th><th>Tip</th><th>Aylık Ücret</th><th>Durum</th></tr>
+        <tr><td class="mono">TRF-EKO20</td><td>Ekonomik 20GB</td><td>POSTPAID</td><td>₺249</td><td><span class="pill up"><span class="d"></span>ACTIVE</span></td></tr>
+        <tr><td class="mono">TRF-SUP40</td><td>Süper 40GB</td><td>POSTPAID</td><td>₺389</td><td><span class="pill up"><span class="d"></span>ACTIVE</span></td></tr>
+        <tr><td class="mono">TRF-AIL60</td><td>Aile 60GB</td><td>POSTPAID</td><td>₺499</td><td><span class="pill up"><span class="d"></span>ACTIVE</span></td></tr>
+        <tr><td class="mono">ADD-CLOUD5</td><td>Bulut Depolama 5GB</td><td>VAS ADDON</td><td>₺19</td><td><span class="pill up"><span class="d"></span>ACTIVE</span></td></tr>
+      </table>
+    </section>
+
+    <!-- ORDERS -->
+    <section class="view" id="view-orders" data-screen-label="Siparişler">
+      <div class="sec-h"><h2>Siparişler</h2><span class="dim">order-service · Saga/outbox — portal satın almaları canlı düşer</span></div>
+      <table id="orders-table"></table>
+    </section>
+
+    <!-- BILLING -->
+    <section class="view" id="view-billing" data-screen-label="Faturalama">
+      <div class="sec-h"><h2>Fatura Döngüsü</h2><span class="dim">billing-service · bill-run</span></div>
+      <div class="stat-row" style="grid-template-columns:repeat(4,1fr);">
+        <div class="stat"><div class="l">Bu Ay Kesilen</div><div class="v">4.201</div></div>
+        <div class="stat"><div class="l">Fatura Hacmi</div><div class="v">₺61,9M</div></div>
+        <div class="stat"><div class="l">Tahsilat Oranı</div><div class="v">%94,2</div></div>
+        <div class="stat"><div class="l">Bill-Run Durumu</div><div class="v" style="color:var(--success);font-size:15px;">TAMAMLANDI</div></div>
+      </div>
+      <table>
+        <tr><th>Fatura</th><th>Müşteri</th><th>Dönem</th><th>Tutar</th><th>Durum</th></tr>
+        <tr><td class="mono">INV-2026-07-0412</td><td>Elif Aydın</td><td>Temmuz 2026</td><td>₺482,50</td><td id="elif-invoice-status"><span class="pill degraded"><span class="d"></span>PENDING</span></td></tr>
+        <tr><td class="mono">INV-2026-07-0388</td><td>Kerem Şahin</td><td>Temmuz 2026</td><td>₺249,00</td><td><span class="pill up"><span class="d"></span>PAID</span></td></tr>
+        <tr><td class="mono">INV-2026-07-0561</td><td>Burak Er</td><td>Temmuz 2026</td><td>₺499,00</td><td><span class="pill up"><span class="d"></span>PAID</span></td></tr>
+      </table>
+    </section>
+
+    <!-- TICKETS -->
+    <section class="view" id="view-tickets" data-screen-label="Ticket Center">
+      <div class="sec-h"><h2>Ticket Center</h2><span class="dim">ticket-service · portal talepleri canlı düşer</span></div>
+      <table id="tickets-table">
+        <tr><th>ID</th><th>Müşteri</th><th>Konu</th><th>Kategori</th><th>Durum</th></tr>
+        <tr><td class="mono">#TCK-2291</td><td>Elif Aydın</td><td>Fatura kalemi anlaşılamadı</td><td>Fatura</td><td><span class="pill degraded"><span class="d"></span>OPEN</span></td></tr>
+        <tr><td class="mono">#TCK-2140</td><td>Elif Aydın</td><td>Paket değişikliği talebi</td><td>Tarife</td><td><span class="pill up"><span class="d"></span>RESOLVED</span></td></tr>
+        <tr><td class="mono">#TCK-2101</td><td>Zeynep Kaya</td><td>Hat askıya alma itirazı</td><td>Abonelik</td><td><span class="pill degraded"><span class="d"></span>OPEN</span></td></tr>
+      </table>
+    </section>
+
+    <!-- MONITORING -->
+    <section class="view" id="view-monitoring" data-screen-label="Monitoring">
+      <div class="kube-stats">
+        <div class="stat"><div class="l">Toplam Pod</div><div class="v" id="kube-total-pods">—</div><div class="dim">max <span id="kube-total-max">—</span></div></div>
+        <div class="stat"><div class="l">Aktif Bağlı Kullanıcı</div><div class="v" id="kube-active-users">—</div></div>
+        <div class="stat"><div class="l">Ortalama CPU</div><div class="v" id="kube-avg-cpu">—</div><div class="dim">HPA hedefi: %70</div></div>
+        <div class="stat"><div class="l">Scale Olayı</div><div class="v" id="kube-scale-count">—</div><div class="dim">otomatik HPA</div></div>
       </div>
       <div class="card">
-        <h3 style="margin:0 0 4px;font-size:15px;">Yeni Tarife (ADMIN)</h3>
-        <div class="row2">
-          <div><label>Kod</label><input id="nt-code" value="AILE_POSTPAID_30GB"></div>
-          <div><label>Tip</label><select id="nt-type"><option>POSTPAID</option><option>PREPAID</option><option>HYBRID</option></select></div>
+        <h3>Aktif kullanıcı ↔ toplam pod korelasyonu (canlı)</h3>
+        <svg class="chart-svg" id="pods-chart" viewBox="0 0 600 140" preserveAspectRatio="none"></svg>
+        <div class="legend"><span><i style="background:var(--primary);"></i>Toplam Pod</span><span><i style="background:var(--info);"></i>Aktif Kullanıcı (ölçekli)</span></div>
+      </div>
+      <div class="guide-grid">
+        <div class="guide-card">
+          <h3>Servis durumu nasıl kontrol edilir?</h3>
+          <ul>
+            <li><b>/actuator/health</b> her serviste 5–20sn aralıkla otomatik yoklanır.</li>
+            <li><b>kubectl get pods -n telcox</b> ile pod durumu ve restart sayısı.</li>
+            <li><b>Grafana + Prometheus</b> — CPU / RAM / latency metrikleri.</li>
+            <li><b>Zipkin</b> — dağıtık trace: gecikme hangi serviste görülür.</li>
+            <li><b>Kafka UI (:9093)</b> — consumer lag ve topic sağlığı.</li>
+          </ul>
         </div>
-        <label>Ad</label><input id="nt-name" value="Aile Postpaid 30GB">
-        <div class="row2">
-          <div><label>Aylık ücret (₺)</label><input id="nt-fee" value="429.90"></div>
-          <div><label>Segment</label><input id="nt-seg" value="FAMILY"></div>
+        <div class="guide-card">
+          <h3>Kubernetes servisleri nasıl yönetiyor?</h3>
+          <ul>
+            <li><b>HPA</b> CPU/istek yoğunluğuna göre pod sayısını min–max aralığında otomatik ayarlar.</li>
+            <li><b>Readiness probe</b> başarısız pod trafik almaz; <b>liveness</b> başarısız pod yeniden başlatılır.</li>
+            <li><b>Stabilization window</b> ani salınımı (flapping) önler.</li>
+            <li>Kaynak yetersizse <b>Cluster Autoscaler</b> yeni node ekler.</li>
+            <li>Sürekli çöken pod <b>CrashLoopBackOff</b>'a düşer — manuel müdahale gerekir.</li>
+          </ul>
         </div>
-        <div class="row2">
-          <div><label>Dakika</label><input id="nt-min" value="1500"></div>
-          <div><label>İnternet (MB)</label><input id="nt-mb" value="30720"></div>
+      </div>
+      <div class="svc-toolbar">
+        <div class="sum-pills">
+          <div class="sum-pill"><span class="dot up"></span><span id="sum-up">—</span></div>
+          <div class="sum-pill"><span class="dot degraded"></span><span id="sum-deg">—</span></div>
+          <div class="sum-pill"><span class="dot down"></span><span id="sum-down">—</span></div>
         </div>
-        <button class="btn" id="nt-create">Tarife Oluştur</button>
-        <div class="actions">
-          <input id="pp-code" placeholder="Tarife kodu" style="max-width:200px">
-          <input id="pp-fee" placeholder="Yeni ücret" style="max-width:110px">
-          <button class="btn sec mini" id="pp-do">Fiyat Güncelle (versiyonlar)</button>
-          <button class="btn sec mini" id="pp-hist">Versiyon Geçmişi</button>
+        <div class="filters">
+          <button class="filter-btn active" data-filter="all">Tümü</button>
+          <button class="filter-btn" data-filter="up">Healthy</button>
+          <button class="filter-btn" data-filter="degraded">Slow</button>
+          <button class="filter-btn" data-filter="down">Down</button>
         </div>
+      </div>
+      <div class="svc-grid" id="svc-grid"></div>
+      <div class="sec-h"><h2>Son Ölçekleme Olayları (HPA)</h2></div>
+      <table id="scale-events-table"></table>
+    </section>
+
+    <!-- LOGS -->
+    <section class="view" id="view-logs" data-screen-label="Logs">
+      <div class="log-toolbar">
+        <select id="log-svc-filter"></select>
+        <select id="log-lvl-filter"><option value="all">Tüm seviyeler</option><option>INFO</option><option>WARN</option><option>ERROR</option></select>
+      </div>
+      <div class="stream" id="log-stream"></div>
+    </section>
+
+    <!-- ALARMS -->
+    <section class="view" id="view-alarms" data-screen-label="Alarm Merkezi">
+      <div class="sec-h"><h2>Aktif Alarmlar</h2><span class="dim">acknowledge / restart / incident aksiyonları</span></div>
+      <div id="alarm-list"></div>
+    </section>
+
+    <!-- INCIDENTS -->
+    <section class="view" id="view-incidents" data-screen-label="Incident">
+      <div class="sec-h"><h2>Incident Kayıtları</h2><span class="dim">servis çöktüğünde otomatik açılır</span></div>
+      <table id="incident-table"></table>
+    </section>
+  </main>
+</div>
+
+<!-- service detail drawer -->
+<div class="drawer-backdrop" id="drawer-backdrop">
+  <div class="drawer">
+    <button class="drawer-close" id="drawer-close">✕</button>
+    <h2 id="d-name">—</h2>
+    <div class="ctx" id="d-ctx">—</div>
+    <div class="kv" id="d-kv"></div>
+    <div class="bar-track"><div id="d-cpu-bar" style="width:0"></div></div>
+    <div class="drawer-section"><h3>API / Kafka Yüzeyi</h3><div id="d-api"></div></div>
+    <div class="drawer-section"><h3>Olası Sorunlar & Çözüm (Runbook)</h3><div id="d-runbook"></div></div>
+    <div class="drawer-section"><h3>Operasyon</h3>
+      <div class="op-buttons">
+        <button class="op-btn" id="op-restart">↻ Pod'u Yeniden Başlat</button>
+        <button class="op-btn" id="op-scale">↑ Manuel Ölçekle (+1 Pod)</button>
+        <button class="op-btn" id="op-logs">≡ Canlı Log Al</button>
       </div>
     </div>
-
-    <p class="eyebrow">Destek Operasyonu</p>
-    <div class="cols2">
-      <div class="card">
-        <h3 style="margin:0 0 4px;font-size:15px;">Müşteri Talepleri</h3>
-        <div class="row2">
-          <input id="tk-cust" value="11111111-0000-4000-8000-000000000001">
-          <button class="btn mini" id="tk-load" style="margin-top:0">Talepleri Getir</button>
-        </div>
-        <div class="tbl-scroll" id="tickets"></div>
-      </div>
-      <div class="card">
-        <h3 style="margin:0 0 4px;font-size:15px;">Bildirim Gönder / Şablonlar</h3>
-        <label>Kullanıcı (customerId)</label><input id="nf-user" value="11111111-0000-4000-8000-000000000001">
-        <div class="row2">
-          <div><label>Şablon</label><select id="nf-tpl"></select></div>
-          <div><label>Placeholder JSON</label><input id="nf-ph" value='{"thresholdPercentage":"80"}'></div>
-        </div>
-        <button class="btn" id="nf-send">Bildirimi Gönder</button>
-      </div>
-    </div>
-
-    <p class="eyebrow">Faturalama & Müşteri</p>
-    <div class="cols2">
-      <div class="card">
-        <h3 style="margin:0 0 4px;font-size:15px;">Fatura Operasyonu</h3>
-        <div class="actions">
-          <button class="btn mini" id="br-run">Bill-Run Tetikle (ADMIN)</button>
-          <input id="inv-cust" value="11111111-0000-4000-8000-000000000001" style="max-width:280px">
-          <button class="btn sec mini" id="inv-load">Faturaları Getir</button>
-        </div>
-        <div class="tbl-scroll" id="invoices"></div>
-      </div>
-      <div class="card">
-        <h3 style="margin:0 0 4px;font-size:15px;">Yeni Müşteri + KYC</h3>
-        <div class="row2">
-          <div><label>Ad</label><input id="c-first" value="Mert"></div>
-          <div><label>Soyad</label><input id="c-last" value="Kaya"></div>
-        </div>
-        <div class="row2">
-          <div><label>TCKN</label><input id="c-tckn" value="98765432109"></div>
-          <div><label>Doğum tarihi</label><input id="c-dob" value="1994-06-15"></div>
-        </div>
-        <button class="btn" id="c-create">Müşteri Oluştur</button>
-        <div class="actions">
-          <input id="kyc-id" placeholder="customerId" style="max-width:280px">
-          <button class="btn sec mini" id="kyc-approve">KYC Onayla (ADMIN)</button>
-        </div>
-      </div>
-    </div>
+    <div class="drawer-section"><h3>Son Loglar</h3><div id="d-logs"></div></div>
   </div>
+</div>
 
-  <div class="console" id="console"><b>›</b> Hazır. İşlem cevapları burada görünür.</div>
+<!-- customer detail drawer -->
+<div class="drawer-backdrop" id="cust-backdrop">
+  <div class="drawer">
+    <button class="drawer-close" id="cust-close">✕</button>
+    <h2 id="c-name">—</h2>
+    <div class="ctx" id="c-ctx">—</div>
+    <div class="kv" id="c-kv"></div>
+    <div class="drawer-section"><h3>Satın Alma Geçmişi</h3><div id="c-purchases"></div></div>
+    <div class="drawer-section"><h3>Açık Talepler</h3><div id="c-tickets"></div></div>
+    <div class="drawer-section"><h3>İşlem Logları</h3><div id="c-logs"></div></div>
+  </div>
+</div>
+
+<button id="ai-fab" title="AI Asistan">✦</button>
+<div id="ai-panel">
+  <div class="ai-head"><span class="spark">✦</span>AI Asistan<button id="ai-close">✕</button></div>
+  <div id="ai-msgs"><div class="ai-msg bot">Merhaba! Servis sağlığı hakkında soru sorabilirsin.
+Örn: "payment service neden yavaş?"</div></div>
+  <form id="ai-form"><input id="ai-input" type="text" placeholder="Bir soru sor..." autocomplete="off"><button type="submit">Sor</button></form>
+</div>
 
 <script src="telcox-shared.js"></script>
-<script>
-const S = telcoxGuard('admin');
-if (S) { document.getElementById('u-name').textContent = S.name; init(); }
-
-const con = document.getElementById('console');
-function logc(label, r){
-  const body = typeof r.data === 'object' ? JSON.stringify(r.data)?.slice(0,600) : String(r.data).slice(0,300);
-  con.innerHTML = `<b>› ${esc(label)}</b> — HTTP ${r.status || 'AĞ HATASI'}<br>${esc(body || '(boş)')}` ;
-}
-
-/* ── Servis sağlığı ── */
-const SERVICES = [
-  {n:'api-gateway', u:'/actuator/health', owner:'Infra'},
-  {n:'customer-service', u:'http://localhost:9002/actuator/health', owner:'Aymina'},
-  {n:'product-catalog', u:'http://localhost:9003/actuator/health', owner:'Nasrulla'},
-  {n:'order-service', u:'http://localhost:9004/actuator/health', owner:'Aymina'},
-  {n:'subscription', u:'http://localhost:9005/actuator/health', owner:'Aymina'},
-  {n:'usage-service', u:'http://localhost:9006/actuator/health', owner:'Mervenur'},
-  {n:'billing-service', u:'http://localhost:9007/actuator/health', owner:'Mervenur'},
-  {n:'payment-service', u:'http://localhost:9008/actuator/health', owner:'Mervenur'},
-  {n:'notification', u:'http://localhost:9009/actuator/health', owner:'Nasrulla'},
-  {n:'ticket-service', u:'http://localhost:9010/actuator/health', owner:'Nasrulla'},
-];
-async function checkHealth(){
-  const el = document.getElementById('health');
-  el.innerHTML = SERVICES.map((s,i)=>`<div class="svc" id="svc-${i}"><div class="svc-head"><span class="dot"></span>${s.n}<span class="pill unk">…</span></div><div class="meta">${s.owner}</div></div>`).join('');
-  SERVICES.forEach(async (s,i)=>{
-    const box = document.getElementById('svc-'+i), dot = box.querySelector('.dot'), pill = box.querySelector('.pill');
-    try {
-      const res = await fetch(s.u, {signal: AbortSignal.timeout(4000)});
-      const up = res.ok; dot.className = 'dot ' + (up?'up':'down');
-      pill.className = 'pill ' + (up?'up':'down'); pill.textContent = up?'UP':'DOWN';
-    } catch {
-      dot.className = 'dot unk'; pill.className = 'pill unk'; pill.textContent = 'ERİŞİLEMEDİ';
-      box.querySelector('.meta').textContent += ' · CORS/kapalı olabilir';
-    }
-  });
-}
-
-/* ── Katalog ── */
-async function loadTariffs(){
-  const r = await api('/api/v1/tariffs?size=50&sort=code,asc');
-  const el = document.getElementById('tariffs');
-  if (!r.ok) { el.textContent = 'Yüklenemedi: ' + r.status; return; }
-  const rows = asList(r.data);
-  el.innerHTML = `<table><thead><tr><th>Kod</th><th>Tip</th><th class="num">Ücret</th><th>Segment</th><th class="num">v</th></tr></thead><tbody>` +
-    rows.map(t=>`<tr><td>${esc(t.code)}</td><td>${esc(t.type)}</td><td class="num">${fmtTL(t.monthlyFee)}</td><td>${esc(t.targetSegment||'—')}</td><td class="num">${t.version}</td></tr>`).join('') + `</tbody></table>`;
-}
-document.getElementById('nt-create').addEventListener('click', async ()=>{
-  const r = await api('/api/v1/tariffs', {method:'POST', body: JSON.stringify({
-    code:document.getElementById('nt-code').value, name:document.getElementById('nt-name').value,
-    type:document.getElementById('nt-type').value, monthlyFee:parseFloat(document.getElementById('nt-fee').value),
-    minutesIncluded:parseInt(document.getElementById('nt-min').value), smsIncluded:500,
-    dataMbIncluded:parseInt(document.getElementById('nt-mb').value),
-    effectiveFrom:new Date().toISOString().slice(0,10), targetSegment:document.getElementById('nt-seg').value })});
-  logc('POST /tariffs', r); if (r.ok) loadTariffs();
-});
-document.getElementById('pp-do').addEventListener('click', async ()=>{
-  const code = document.getElementById('pp-code').value.trim();
-  const r = await api(`/api/v1/tariffs/${code}/price`, {method:'PATCH', body: document.getElementById('pp-fee').value});
-  logc('PATCH /tariffs/'+code+'/price', r); if (r.ok) loadTariffs();
-});
-document.getElementById('pp-hist').addEventListener('click', async ()=>{
-  const code = document.getElementById('pp-code').value.trim();
-  const r = await api(`/api/v1/tariffs/${code}/versions`);
-  logc('GET /tariffs/'+code+'/versions', r);
-});
-
-/* ── Destek ── */
-async function loadTickets(){
-  const r = await api(`/api/v1/tickets?customerId=${document.getElementById('tk-cust').value.trim()}&size=10`);
-  const el = document.getElementById('tickets');
-  if (!r.ok) { el.textContent = 'Yüklenemedi: ' + r.status; return; }
-  const rows = asList(r.data);
-  el.innerHTML = `<table><thead><tr><th>Kategori</th><th>Öncelik</th><th>Durum</th><th>Ekip</th><th></th></tr></thead><tbody>` +
-    rows.map(t=>`<tr><td>${esc(t.category)}</td><td>${esc(t.priority)}</td><td>${esc(t.status)}</td><td>${esc(t.assignedTeam||'—')}</td>
-      <td><button class="btn sec mini" onclick="ticketOp('${t.id}','${t.status}')">${t.status==='OPEN'?'İşleme Al':t.status==='IN_PROGRESS'?'Çöz':'—'}</button></td></tr>`).join('') + `</tbody></table>`;
-}
-async function ticketOp(id, status){
-  let r;
-  if (status === 'OPEN') r = await api(`/api/v1/tickets/${id}/status`, {method:'PATCH', body: JSON.stringify({status:'IN_PROGRESS'})});
-  else if (status === 'IN_PROGRESS') r = await api(`/api/v1/tickets/${id}/resolve`, {method:'POST'});
-  else return;
-  logc('ticket ' + id.slice(0,8), r); if (r.ok) loadTickets();
-}
-document.getElementById('tk-load').addEventListener('click', loadTickets);
-
-/* ── Bildirim ── */
-async function loadTemplates(){
-  const r = await api('/api/v1/notification-templates');
-  const sel = document.getElementById('nf-tpl');
-  sel.innerHTML = (asList(r.data)).map(t=>`<option>${esc(t.code)}</option>`).join('') || '<option>QUOTA_WARNING_80</option>';
-}
-document.getElementById('nf-send').addEventListener('click', async ()=>{
-  let ph = {}; try { ph = JSON.parse(document.getElementById('nf-ph').value||'{}'); } catch {}
-  const r = await api('/api/v1/notifications/send', {method:'POST', body: JSON.stringify({
-    userId: document.getElementById('nf-user').value.trim(),
-    templateCode: document.getElementById('nf-tpl').value, placeholders: ph })});
-  logc('POST /notifications/send', r);
-});
-
-/* ── Faturalama & müşteri ── */
-document.getElementById('br-run').addEventListener('click', async ()=>{
-  const r = await api('/api/v1/billing/runs', {method:'POST'});
-  logc('POST /billing/runs', r);
-});
-document.getElementById('inv-load').addEventListener('click', async ()=>{
-  const r = await api(`/api/v1/invoices/customer/${document.getElementById('inv-cust').value.trim()}`);
-  const el = document.getElementById('invoices');
-  if (!r.ok) { el.textContent = 'Yüklenemedi: ' + r.status; logc('GET /invoices', r); return; }
-  const rows = asList(r.data);
-  el.innerHTML = `<table><thead><tr><th>Dönem</th><th class="num">Tutar</th><th>Durum</th><th>Son Ödeme</th></tr></thead><tbody>` +
-    rows.map(i=>`<tr><td>${fmtDate(i.periodStart)} – ${fmtDate(i.periodEnd)}</td><td class="num">${fmtTL(i.grandTotal)}</td><td>${esc(i.status)}</td><td>${fmtDate(i.dueDate)}</td></tr>`).join('') + `</tbody></table>`;
-});
-document.getElementById('c-create').addEventListener('click', async ()=>{
-  const r = await api('/api/v1/customers', {method:'POST', body: JSON.stringify({
-    type:'INDIVIDUAL', firstName:document.getElementById('c-first').value, lastName:document.getElementById('c-last').value,
-    identityNumber:document.getElementById('c-tckn').value, dateOfBirth:document.getElementById('c-dob').value })});
-  logc('POST /customers', r);
-  if (r.ok && r.data?.id) document.getElementById('kyc-id').value = r.data.id;
-});
-document.getElementById('kyc-approve').addEventListener('click', async ()=>{
-  const id = document.getElementById('kyc-id').value.trim();
-  const r = await api(`/api/v1/customers/${id}/kyc/approve`, {method:'POST'});
-  logc('POST /customers/'+id.slice(0,8)+'/kyc/approve', r);
-});
-
-function init(){ checkHealth(); loadTariffs(); loadTickets(); loadTemplates(); setInterval(checkHealth, 15000); }
-</script>
+<script src="telcox-admin.js"></script>
 </body>
 </html>

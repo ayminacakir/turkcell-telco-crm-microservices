@@ -1,6 +1,7 @@
 package com.turkcell.usage_service.controller;
 
 import com.turkcell.usage_service.dto.request.CreateQuotaRequest;
+import com.turkcell.usage_service.dto.request.ResetQuotaRequest;
 import com.turkcell.usage_service.dto.request.CreateUsageRecordRequest;
 import com.turkcell.usage_service.dto.response.QuotaResponse;
 import com.turkcell.usage_service.dto.response.UsageRecordResponse;
@@ -45,6 +46,15 @@ public class UsageController {
     @GetMapping("/subscriptions/{subscriptionId}/quota")
     public ResponseEntity<QuotaResponse> getActiveQuota(@PathVariable UUID subscriptionId) {
         return ResponseEntity.ok(usageService.getActiveQuota(subscriptionId));
+    }
+
+    // Kota sıfırla — Tarife degisince portal bunu cagirir: kotayi yeni paket miktarina sifirlar.
+    @org.springframework.web.bind.annotation.PutMapping("/subscriptions/{subscriptionId}/quota")
+    public ResponseEntity<com.turkcell.usage_service.dto.response.QuotaResponse> resetQuota(
+            @PathVariable java.util.UUID subscriptionId,
+            @RequestBody ResetQuotaRequest req) {
+        return ResponseEntity.ok(usageService.resetQuota(subscriptionId,
+                req.minutes()==null?0:req.minutes(), req.sms()==null?0:req.sms(), req.mb()==null?0:req.mb()));
     }
 
     // Kota oluştur (internal/admin)
