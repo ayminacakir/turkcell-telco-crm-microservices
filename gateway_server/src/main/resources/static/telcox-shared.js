@@ -201,9 +201,25 @@ const TELCOX = {
   },
 };
 
+/* Girilen değeri (kullanıcı adı / telefon / isim) Keycloak kullanıcı adına çevirir.
+   Örn "0532 417 47 12", "05324174712", "Elif Aydın", "elif" → "elif.aydin". */
+function telcoxResolveUsername(input){
+  const raw = (input || '').trim();
+  if (TELCOX.USERS[raw]) return raw;                 // zaten kullanıcı adı
+  const norm = raw.toLocaleLowerCase('tr');
+  const digits = raw.replace(/\D/g, '');
+  for (const [uname, p] of Object.entries(TELCOX.USERS)) {
+    if (p.name && p.name.toLocaleLowerCase('tr') === norm) return uname;         // tam isim
+    if (p.name && p.name.toLocaleLowerCase('tr').split(' ')[0] === norm) return uname; // ilk ad
+    if (p.msisdn && p.msisdn.replace(/\D/g, '') === digits && digits.length >= 10) return uname; // telefon
+  }
+  return raw;   // bulunamazsa girileni aynen dene (Keycloak karar versin)
+}
+
 /* Keycloak ROPC ile gerçek token. Başarısızsa {ok:false, offline?} döner. */
-async function telcoxAuth(username, password, role){
-  const profile = TELCOX.USERS[username] || { name: username, customerId: null };
+async function telcoxAuth(input, password, role){
+  const username = telcoxResolveUsername(input);
+  const profile = TELCOX.USERS[username] || { name: input, customerId: null };
   try {
     const res = await fetch(TELCOX.TOKEN_URL, {
       method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},

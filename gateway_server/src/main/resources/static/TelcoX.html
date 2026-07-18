@@ -85,7 +85,7 @@
       <button class="role-tab" data-role="admin">Yönetici (Operasyon)</button>
     </div>
     <form id="login-form">
-      <div class="field"><label id="user-label">Kullanıcı adı</label><input type="text" id="login-user" value="elif.aydin" required></div>
+      <div class="field"><label id="user-label">Telefon / Kullanıcı adı</label><input type="text" id="login-user" value="0532 417 47 12" required></div>
       <div class="field"><label>Şifre</label><input type="password" id="login-pass" value="telcox123" required></div>
       <div class="row-between">
         <label><input type="checkbox" checked> Beni hatırla</label>
@@ -125,8 +125,8 @@
 <script>
   let role = 'customer';
   const cfg = {
-    customer: {title:'Müşteri Girişi', sub:'Online işlemler için hesabına giriş yap.', userLabel:'Kullanıcı adı', userVal:'elif.aydin', btn:'Giriş Yap', target:'Musteri Portali.html'},
-    admin: {title:'Operasyon Konsolu', sub:'Servis sağlığı, müşteri ve katalog yönetimi.', userLabel:'Kurumsal kullanıcı', userVal:'ops', btn:'Konsola Giriş', target:'Admin Paneli.html'},
+    customer: {title:'Müşteri Girişi', sub:'Online işlemler için hesabına giriş yap.', userLabel:'Telefon / Kullanıcı adı', userVal:'0532 417 47 12', btn:'Giriş Yap', target:'Musteri Portali.html'},
+    admin: {title:'Operasyon Konsolu', sub:'Servis sağlığı, müşteri ve katalog yönetimi.', userLabel:'Kullanıcı adı', userVal:'ops', btn:'Konsola Giriş', target:'Admin Paneli.html'},
   };
   document.querySelectorAll('.role-tab').forEach(tab=>{
     tab.addEventListener('click', ()=>{
