@@ -18,3 +18,8 @@ spring:
             value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
     flyway:
         baseline-on-migrate: true
+    security:
+        oauth2:
+            resourceserver:
+                jwt:
+                    issuer-uri: http://localhost:8085/realms/telco-crm
