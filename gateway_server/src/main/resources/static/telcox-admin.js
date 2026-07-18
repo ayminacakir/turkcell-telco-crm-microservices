@@ -38,7 +38,8 @@ let biz = { customers:128402, ordersToday:412, revenueToday:184230, openTickets:
 let revenueHist = Array.from({length:30},(_,i)=> 140000+Math.sin(i/4)*22000+Math.random()*14000);
 let chartHistory = [];
 let scaleEvents = [];
-let incidents = [{id:'INC-000123', service:'notification-service', started: telcoxNow(), status:'Investigating', assigned:'DevOps Team', desc:'Connection refused — CrashLoopBackOff'}];
+// Incident'lar gerçek servis sağlığından türetilir (bkz. realHealth); başlangıçta boş.
+let incidents = [];
 let synthetic = []; // synthetic log lines
 
 // ---- view switching ----
@@ -431,6 +432,21 @@ setInterval(tick,2200);
     if(av) av.textContent = (st.name||'OP').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
   }
 
+  // ---- Incident'ları gerçek servis sağlığıyla eşitle (idempotent) ----
+  // DOWN servis için açık incident yoksa aç; toparlanan servisin incident'ını çöz.
+  function reconcileIncidents(){
+    (typeof TELCOX_SERVICES!=='undefined'?TELCOX_SERVICES:[]).forEach(s=>{
+      const r=runtime[s.name]; if(!r) return;
+      const open=incidents.find(i=>i.service===s.name && i.status!=='Resolved');
+      if(r.status==='down' && !open){
+        createIncident(s.name, 'Servis ayakta değil — /actuator/health erişilemedi (DOWN)');
+      } else if(r.status!=='down' && open){
+        open.status='Resolved'; open.resolved=telcoxNow();
+        telcoxPushEvent(s.name, `${open.id} otomatik çözüldü — /actuator/health UP (200)`, 'ok');
+      }
+    });
+  }
+
   // ---- 1) GERÇEK sağlık: /ops/health → runtime[].status ----
   async function realHealth(){
     const r = await api('/ops/health');
@@ -445,8 +461,12 @@ setInterval(tick,2200);
         runtime[name].status='down'; runtime[name].replicas=0; runtime[name].latency=null; runtime[name].errRate=100;
       }
     });
+    reconcileIncidents();
     renderAll(); if(openService) refreshDrawer();
   }
+  // İlk render'da sim başlangıç durumunu da (ör. notification-service down) incident'a yansıt;
+  // /ops/health erişilemese bile alarm ↔ incident tutarlı kalır.
+  reconcileIncidents();
   realHealth();
   setInterval(realHealth, 12000);
 
@@ -609,6 +629,19 @@ setInterval(tick,2200);
   try {
     if(typeof renderStats==='function'){ const _rs=renderStats; renderStats=function(){ try{_rs();}catch(e){} renderStatsReal(); }; }
     if(typeof renderLogs==='function'){ renderLogs = realLogs; }
+    // Alarm'lar SADECE gerçek servis sağlığından türetilir (sim CPU gürültüsü kaldırıldı):
+    // DOWN → critical, degraded → warning. Kaynak: /ops/health (realHealth).
+    if(typeof activeAlarms==='function'){
+      activeAlarms = function(){
+        const list=[];
+        (typeof TELCOX_SERVICES!=='undefined'?TELCOX_SERVICES:[]).forEach(s=>{
+          const r=(typeof runtime!=='undefined')?runtime[s.name]:null; if(!r) return;
+          if(r.status==='down') list.push({sev:'critical', service:s.name, msg:'Servis ayakta değil — /actuator/health erişilemedi (DOWN)', action:'restart'});
+          else if(r.status==='degraded') list.push({sev:'warning', service:s.name, msg:`Yanıt süresi yüksek: ${r.latency}ms`, action:'scale'});
+        });
+        return list.filter(a=>!runtime[a.service].acked || a.sev==='critical');
+      };
+    }
   } catch(e){}
 
   async function pollFast(){ await Promise.all([realTickets(), realOrders(), realSubs()]); renderStatsReal(); realLogs(); }
