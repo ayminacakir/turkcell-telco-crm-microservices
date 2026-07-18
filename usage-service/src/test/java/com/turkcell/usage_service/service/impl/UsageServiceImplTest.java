@@ -48,13 +48,16 @@ class UsageServiceImplTest {
     private ArgumentCaptor<Object> outboxPayloadCaptor;
 
     private UUID subscriptionId;
+    private UUID customerId;
     private Quota quota;
 
     @BeforeEach
     void setUp() {
         subscriptionId = UUID.randomUUID();
+        customerId = UUID.randomUUID();
         quota = new Quota();
         quota.setSubscriptionId(subscriptionId);
+        quota.setCustomerId(customerId);
         quota.setPeriodStart(LocalDate.now().minusDays(5));
         quota.setPeriodEnd(LocalDate.now().plusDays(25));
         quota.setMinutesTotal(100);
@@ -98,6 +101,7 @@ class UsageServiceImplTest {
         verify(outboxEventWriter).write(eq(subscriptionId), eq("Quota"), eq("QuotaExceeded"),
                 outboxPayloadCaptor.capture());
         QuotaThresholdEvent event = (QuotaThresholdEvent) outboxPayloadCaptor.getValue();
+        assertThat(event.getCustomerId()).isEqualTo(customerId);
         assertThat(event.getThreshold()).isEqualTo("PERCENT_100");
         assertThat(event.getType()).isEqualTo("DATA");
         assertThat(event.getRemaining()).isZero();
@@ -114,6 +118,7 @@ class UsageServiceImplTest {
         verify(outboxEventWriter).write(eq(subscriptionId), eq("Quota"), eq("QuotaThresholdReached"),
                 outboxPayloadCaptor.capture());
         QuotaThresholdEvent event = (QuotaThresholdEvent) outboxPayloadCaptor.getValue();
+        assertThat(event.getCustomerId()).isEqualTo(customerId);
         assertThat(event.getThreshold()).isEqualTo("PERCENT_80");
         assertThat(event.getType()).isEqualTo("SMS");
     }

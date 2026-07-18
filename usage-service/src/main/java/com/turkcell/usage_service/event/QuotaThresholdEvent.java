@@ -12,6 +12,7 @@ import java.util.UUID;
 public class QuotaThresholdEvent {
     private UUID eventId;
     private String eventType;    // QuotaThresholdReached, QuotaExceeded
+    private UUID customerId;
     private UUID subscriptionId;
     private String type;         // VOICE, SMS, DATA
     private String threshold;    // PERCENT_80, PERCENT_100
