@@ -264,6 +264,7 @@ Swagger UI her serviste `/swagger-ui.html` adresindedir (ör. `http://localhost:
 | [docs/PROJE_GEREKSINIMLERI.md](docs/PROJE_GEREKSINIMLERI.md) | MVP analiz ve tasarım (33 FR) |
 | [docs/DEMO.md](docs/DEMO.md) | TelcoX web arayüzü demo rehberi |
 | [docs/event-contracts.md](docs/event-contracts.md) | Kafka event sözleşmeleri |
+| [docs/YONETICI_SUNUM_RAPORU.md](docs/YONETICI_SUNUM_RAPORU.md) | Yönetici sunum raporu |
 | [k8s/product-catalog/README.md](k8s/product-catalog/README.md) | Kubernetes örnek deployment |
 | Servis README'leri | Her servis klasöründe (`billing-service/README.md` vb.) |
 

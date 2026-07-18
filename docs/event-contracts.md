@@ -24,8 +24,8 @@ tüketici sayısı serbesttir. İdempotency: tüm consumer'lar `eventId`'yi
 | `payment.failed` | payment-service (Mervenur) | order, notification | ✅ Netleşti (#2.2) |
 | `subscription.activated` | subscription-service (Aymina) | order, billing, notification | ✅ Netleşti |
 | `invoice.generated` | billing-service (Mervenur) | notification, payment | ✅ Netleşti |
-| `quota.threshold.reached` | usage-service (Mervenur) | notification | ✅ Netleşti (#2.5) — customerId bekleniyor (Açık Soru #6) |
-| `quota.exceeded` | usage-service (Mervenur) | notification | ✅ Netleşti (#2.5) — customerId bekleniyor (Açık Soru #6) |
+| `quota.threshold.reached` | usage-service (Mervenur) | notification | ✅ Netleşti (#2.5) |
+| `quota.exceeded` | usage-service (Mervenur) | notification | ✅ Netleşti (#2.5) |
 | `usage.aggregated` | usage-service (Mervenur) | billing | ✅ Netleşti |
 | `tariff.created` | product-catalog-service (Nasrulla) | — | ✅ Netleşti |
 | `tariff.price.changed` | product-catalog-service (Nasrulla) | — | ✅ Netleşti |
@@ -76,19 +76,18 @@ tüketici sayısı serbesttir. İdempotency: tüm consumer'lar `eventId`'yi
 
 ### 2.5 quota.threshold.reached / quota.exceeded — `QuotaThresholdReached` / `QuotaExceeded`
 
-Usage-service'in **gerçek** payload'ı (origin/merve `054c48f`, `usage_service.event.QuotaThresholdEvent`
-sınıfından doğrulandı). İki topic de aynı yapıyı kullanır; `eventType` alanı ayırt eder:
+Usage-service'in **gerçek** payload'ı (`usage_service.event.QuotaThresholdEvent`,
+main `72a931e` ile doğrulandı). İki topic de aynı yapıyı kullanır; `eventType` alanı ayırt eder:
 
 ```json
 { "eventId": "uuid", "eventType": "QuotaThresholdReached",
-  "subscriptionId": "uuid", "type": "VOICE|SMS|DATA",
+  "customerId": "uuid", "subscriptionId": "uuid", "type": "VOICE|SMS|DATA",
   "threshold": "PERCENT_80|PERCENT_100", "remaining": 0 }
 ```
 
-> ⚠️ **Eksik alan — Açık Soru #6:** Event'te `customerId` yok; notification bildirimi kime
-> göndereceğini bilemez ve bu event'leri (loglayıp) atlar. `Quota` entity'sinde `customer_id`
-> alanı zaten mevcut — usage-service'in event'e `customerId` eklemesi bekleniyor. Alan
-> eklendiği anda notification tarafı kod değişikliği gerektirmeden çalışır.
+> `customerId` alanı `Quota` entity'sinden alınır; notification-service bu alanı
+> kullanarak `QUOTA_WARNING_80` / `QUOTA_EXCEEDED` şablonlu SMS gönderir.
+> Alan null gelirse consumer bildirimi atlar (log + idempotent skip).
 
 ### 2.6 tariff.created — `TariffCreated`
 
@@ -154,7 +153,5 @@ sınıfından doğrulandı). İki topic de aynı yapıyı kullanır; `eventType`
    #4.7 doğruladı) → kapandı.
 5. ~~`quota.exceeded` ayrı bir event tipi mi?~~ → Netleşti: aynı `QuotaThresholdEvent`
    yapısı, `eventType=QuotaExceeded` ve `threshold=PERCENT_100` ile ayrışıyor.
-6. **`customerId` alanı eksik (AKTİF):** quota event'lerinde `customerId` yok;
-   notification bildirimi adresleyemiyor ve bu event'leri atlıyor. `Quota` entity'sinde
-   `customer_id` mevcut — **Mervenur'dan istek:** `QuotaThresholdEvent`'e `customerId`
-   alanını eklemesi. Eklendiğinde notification tarafı otomatik çalışır.
+6. ~~`customerId` alanı eksik~~ → Kapandı (main `72a931e`): `QuotaThresholdEvent`'e
+   `customerId` eklendi; notification consumer ek kod değişikliği gerektirmeden çalışır.
