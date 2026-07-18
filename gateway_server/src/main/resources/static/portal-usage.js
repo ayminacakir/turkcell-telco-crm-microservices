@@ -20,16 +20,29 @@
       <div class="bar-x"><span>00</span><span>06</span><span>12</span><span>18</span><span>23</span></div>
       <div style="font-size:12.5px;color:var(--ink-soft);margin-top:8px;">Zirve: <b style="color:var(--ink);">22:00 · 3.5 GB</b></div></div>
   </div>
-  <div class="chart-card" style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;">
-    <div><h4 style="margin:0 0 4px;">Kullanım Uyarısı</h4><div style="font-size:13px;color:var(--ink-soft);">Kotanın %80'ine ulaştığında SMS + push bildirimi al (quota.threshold.reached)</div></div>
-    <button class="btn ghost" id="quota-alert-btn">Uyarı Ayarla</button></div>
+  <div class="chart-card" style="margin-top:18px;">
+    <h4 style="margin:0 0 10px;">Kullanım Uyarısı</h4>
+    <div style="font-size:13px;color:var(--ink-soft);margin-bottom:12px;">Seçtiğin kota belirlediğin eşiğe düştüğünde SMS + push bildirimi al (quota.threshold.reached)</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+      <div class="field" style="margin:0;"><label>Kota türü</label>
+        <select id="qa-metric" style="padding:10px 12px;border-radius:10px;border:1px solid var(--line);font-family:inherit;font-size:14px;background:oklch(99% 0.002 265);">
+          <option value="mb">İnternet</option><option value="minutes">Dakika</option><option value="sms">SMS</option><option value="all">Hepsi</option></select></div>
+      <div class="field" style="margin:0;"><label>Eşik</label>
+        <select id="qa-threshold" style="padding:10px 12px;border-radius:10px;border:1px solid var(--line);font-family:inherit;font-size:14px;background:oklch(99% 0.002 265);">
+          <option value="80" selected>%80 kullanınca</option><option value="90">%90 kullanınca</option><option value="20">%20 kalınca</option></select></div>
+      <button class="btn ghost" id="quota-alert-btn" style="height:42px;">Uyarı Ayarla</button>
+    </div></div>
   <div class="section-title">Kullanım Geçmişi</div>`;
   view.querySelector('.section-title').remove();
   table.parentNode.insertBefore(wrap, table);
   document.getElementById('quota-alert-btn').addEventListener('click', function(){
-    telcoxPushEvent('usage-service','Kota eşiği aboneliği güncellendi — threshold %80 (SMS+push)','ok');
+    const metricSel = document.getElementById('qa-metric');
+    const label = metricSel.options[metricSel.selectedIndex].text;
+    const th = document.getElementById('qa-threshold').value;
+    const thTxt = th==='20' ? '%20 kalınca' : '%'+th+' kullanınca';
+    telcoxPushEvent('usage-service','Kota eşiği güncellendi — '+label+' · '+thTxt+' (SMS+push)','ok');
     this.textContent = 'Uyarı Aktif ✓'; this.classList.add('primary'); this.classList.remove('ghost');
-    showToast('%80 kota uyarısı ayarlandı');
+    showToast(label+' için '+thTxt+' uyarısı ayarlandı');
   });
   window.telcoxNavTo = function(v){
     document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active', n.getAttribute('data-view')===v));

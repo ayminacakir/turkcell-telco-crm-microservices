@@ -80,6 +80,7 @@
         telcoxSetState({purchases:[...(st0.purchases||[]),{id:Math.random().toString(36).slice(2,10),name:name+' (esnek tarife)',monthlyFee:base,kind:'tariff',cat:'Tarife',catTag:'Esnek Tarife',boughtAt:now.toISOString(),billingMonth:MON[nb.getMonth()]+' '+nb.getFullYear()}]});
         // seçilen dijital/ek servisleri ayrı ürün olarak kaydet (ücretli olanlar)
         chips.filter(e=>e.price>0).forEach(ex=> telcoxReal.recordPurchase({name: ex.label, monthlyFee: ex.price, catTag:'Ek Servis'}));
+        telcoxReal.refresh();   // fatura kartı + geçmiş + kota tam yenilensin
       } else {
         telcoxSetState({activePlan: name});
         document.getElementById('active-plan-name').textContent = name;
