@@ -48,9 +48,14 @@ INSERT INTO msisdn_pool (msisdn,status) VALUES
  ('05324174712','ALLOCATED'),('05335558899','ALLOCATED'),
  ('05360001122','FREE'),('05360001133','FREE'),('05360001144','FREE')
 ON CONFLICT (msisdn) DO NOTHING;
+-- Aktif abonelerin SIM'leri + yeni onboarding icin FREE MSISDN'lere karsilik FREE SIM'ler.
+-- (subscription aktivasyonu payment.completed'da bos MSISDN + o MSISDN'e ait FREE SIM arar)
 INSERT INTO sim_cards (iccid,imsi,msisdn,status) VALUES
  ('8990001234567890001','286010000000001','05324174712','ACTIVE'),
- ('8990001234567890002','286010000000002','05335558899','ACTIVE')
+ ('8990001234567890002','286010000000002','05335558899','ACTIVE'),
+ ('8990001234567890003','286010000000003','05360001122','FREE'),
+ ('8990001234567890004','286010000000004','05360001133','FREE'),
+ ('8990001234567890005','286010000000005','05360001144','FREE')
 ON CONFLICT (iccid) DO NOTHING;
 SQL
 
@@ -59,10 +64,11 @@ psql_db usage-db usage_db <<SQL
 -- total kolonlari (V2'de DEFAULT 0) tarifenin dahil miktarlarina esitlenmeli; yoksa
 -- cubuklar "312 / 0" gibi bozuk gorunur. DO UPDATE ile eski satirlar da onarilir.
 -- SUB1 GENC_HYBRID_10GB = 500dk/250sms/10240mb, SUB2 SUPER_POSTPAID_20GB = 1000/500/20480
-INSERT INTO usage_service.quotas (id,subscription_id,period_start,period_end,minutes_remaining,sms_remaining,mb_remaining,minutes_total,sms_total,mb_total) VALUES
- ('55555555-0000-4000-8000-000000000001','$SUB1',date_trunc('month',now())::date,(date_trunc('month',now())+interval '1 month - 1 day')::date,312,198,1843,500,250,10240),
- ('55555555-0000-4000-8000-000000000002','$SUB2',date_trunc('month',now())::date,(date_trunc('month',now())+interval '1 month - 1 day')::date,780,430,15360,1000,500,20480)
-ON CONFLICT (id) DO UPDATE SET minutes_remaining=EXCLUDED.minutes_remaining, sms_remaining=EXCLUDED.sms_remaining, mb_remaining=EXCLUDED.mb_remaining, minutes_total=EXCLUDED.minutes_total, sms_total=EXCLUDED.sms_total, mb_total=EXCLUDED.mb_total;
+-- customer_id de doldurulur: QuotaThresholdEvent bildirimi kime atacagini bilsin (senaryo 14.3).
+INSERT INTO usage_service.quotas (id,subscription_id,customer_id,period_start,period_end,minutes_remaining,sms_remaining,mb_remaining,minutes_total,sms_total,mb_total) VALUES
+ ('55555555-0000-4000-8000-000000000001','$SUB1','$CUST1',date_trunc('month',now())::date,(date_trunc('month',now())+interval '1 month - 1 day')::date,312,198,1843,500,250,10240),
+ ('55555555-0000-4000-8000-000000000002','$SUB2','$CUST2',date_trunc('month',now())::date,(date_trunc('month',now())+interval '1 month - 1 day')::date,780,430,15360,1000,500,20480)
+ON CONFLICT (id) DO UPDATE SET customer_id=EXCLUDED.customer_id, minutes_remaining=EXCLUDED.minutes_remaining, sms_remaining=EXCLUDED.sms_remaining, mb_remaining=EXCLUDED.mb_remaining, minutes_total=EXCLUDED.minutes_total, sms_total=EXCLUDED.sms_total, mb_total=EXCLUDED.mb_total;
 INSERT INTO usage_service.usage_records (id,subscription_id,type,quantity,recorded_at,cdr_ref)
 SELECT gen_random_uuid(),'$SUB1',(ARRAY['DATA','VOICE','SMS'])[1+(g%3)],(ARRAY[512,4,1])[1+(g%3)]*(1+g%5),now()-(g||' hours')::interval,'CDR-2026-'||lpad(g::text,6,'0')
 FROM generate_series(1,24) g
