@@ -8,7 +8,8 @@
 
 ![Java](https://img.shields.io/badge/Java-21-orange?style=flat-square&logo=openjdk)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3-green?style=flat-square&logo=springboot)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue?style=flat-square&logo=postgresql)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-blue?style=flat-square&logo=postgresql)
+![Kafka](https://img.shields.io/badge/Kafka-4.2-231F20?style=flat-square&logo=apachekafka)
 ![Maven](https://img.shields.io/badge/Maven-Multi--module-red?style=flat-square&logo=apachemaven)
 ![Docker](https://img.shields.io/badge/Docker-ready-2496ED?style=flat-square&logo=docker)
 
@@ -25,9 +26,9 @@
 - [Veri Modeli](#-veri-modeli)
 - [Tech Stack](#-tech-stack)
 - [Kurulum](#-kurulum)
+- [Dokümantasyon](#-dokümantasyon)
 - [ER Diyagramları](#-er-diyagramları)
 - [Proje Durumu](#-proje-durumu)
-- [Yapılacaklar](#-yapılacaklar)
 - [Ekip](#-ekip)
 
 ---
@@ -42,7 +43,7 @@ TelcoX CRM, bir GSM operatörünün tüm iş süreçlerini yöneten **mikroservi
 - 📨 **Event-driven** — Servisler arası iletişim Kafka üzerinden planlanmıştır
 - 🏗️ **Multi-module Maven** — Tüm servisler tek repo, ortak parent pom
 
-> 📄 Detaylı analiz ve tasarım dokümanı (fonksiyonel gereksinimler, servis detayları, event akışı, kabul kriterleri) için: [**Proje Gereksinimleri (MVP Analiz ve Tasarım Dokümanı)**](docs/PROJE_GEREKSINIMLERI.md)
+> 📄 Detaylı analiz ve tasarım dokümanı: [**Proje Gereksinimleri**](docs/PROJE_GEREKSINIMLERI.md) · Demo rehberi: [**TelcoX Web Arayüzü**](docs/DEMO.md) · Event sözleşmeleri: [**event-contracts.md**](docs/event-contracts.md)
 
 ---
 
@@ -66,6 +67,10 @@ TelcoX CRM, bir GSM operatörünün tüm iş süreçlerini yöneten **mikroservi
 ```
 turkcell-telco-crm-microservices/
 │
+├── 🌐 gateway_server/            Port: 8080  │  API Gateway + TelcoX web arayüzü
+├── 🔍 eureka_server/             Port: 8761  │  Servis keşfi
+├── ⚙️  config-server/             Port: 8888  │  Merkezi konfigürasyon
+│
 ├── 📦 customer-service/          Port: 9002  │  DB: customer_db
 ├── 📦 product-catalog-service/   Port: 9003  │  DB: product_catalog_db
 ├── 📦 order-service/             Port: 9004  │  DB: order_db
@@ -76,6 +81,7 @@ turkcell-telco-crm-microservices/
 ├── 📦 notification-service/      Port: 9009  │  DB: notification_db
 ├── 📦 ticket-service/            Port: 9010  │  DB: ticket_db
 │
+├── 🐳 docker/docker-compose.yml  Kafka · PostgreSQL × 9 · Redis · Keycloak
 └── 📄 pom.xml                    ← Root parent pom
 ```
 
@@ -203,15 +209,17 @@ Her servisin entity'leri:
 | Kategori | Teknoloji | Durum |
 |---|---|---|
 | Dil | Java 21 | ✅ |
-| Framework | Spring Boot 3 | ✅ |
+| Framework | Spring Boot 3.4 | ✅ |
+| Cloud | Spring Cloud Gateway, Config, Eureka, OpenFeign | ✅ |
 | ORM | Spring Data JPA / Hibernate | ✅ |
-| Veritabanı | PostgreSQL 15 | ✅ |
+| Veritabanı | PostgreSQL 17 | ✅ |
+| Migration | Flyway | ✅ |
+| Mesajlaşma | Apache Kafka 4.2 | ✅ |
+| Cache / Rate limit | Redis 7 | ✅ |
+| Auth | Keycloak (OAuth2/JWT) | ✅ |
 | Build | Maven (Multi-module) | ✅ |
-| Container | Docker | ✅ |
-| Mesajlaşma | Apache Kafka | 🔜 Planlanan |
-| Service Discovery | Eureka Server | 🔜 Planlanan |
-| API Gateway | Spring Cloud Gateway | 🔜 Planlanan |
-| Config | Spring Cloud Config Server | 🔜 Planlanan |
+| Container | Docker Compose | ✅ |
+| CI | GitHub Actions | ✅ |
 
 ---
 
@@ -223,44 +231,41 @@ Her servisin entity'leri:
 - Maven 3.9+
 - Docker Desktop
 
-### 1. Repoyu Klonla
+### Hızlı Başlangıç
 
 ```bash
 git clone https://github.com/ayminacakir/turkcell-telco-crm-microservices
 cd turkcell-telco-crm-microservices
+
+# 1) Altyapı (Kafka, PostgreSQL × 9, Redis, Keycloak)
+cd docker && docker compose up -d && cd ..
+
+# 2) Servisleri başlat (ayrı terminallerde)
+# config-server → eureka_server → gateway_server → 9 iş servisi
+cd config-server && mvn spring-boot:run
+
+# 3) Demo verisi (opsiyonel)
+./scripts/seed-demo-data.sh
+
+# 4) Web arayüzü
+# http://localhost:8080/TelcoX.html
 ```
 
-### 2. PostgreSQL'i Docker ile Başlat
+Detaylı adımlar, demo kullanıcıları ve sorun giderme için **[docs/DEMO.md](docs/DEMO.md)** dosyasına bakın.
 
-```bash
-docker run -d \
-  --name telco-postgres \
-  -e POSTGRES_USER=admin \
-  -e POSTGRES_PASSWORD=admin \
-  -p 5432:5432 \
-  postgres:15
-```
+Swagger UI her serviste `/swagger-ui.html` adresindedir (ör. `http://localhost:9002/swagger-ui.html`).
 
-### 3. Veritabanlarını Oluştur
+---
 
-```bash
-docker exec -it telco-postgres psql -U admin -c "CREATE DATABASE customer_db;"
-docker exec -it telco-postgres psql -U admin -c "CREATE DATABASE product_catalog_db;"
-docker exec -it telco-postgres psql -U admin -c "CREATE DATABASE order_db;"
-docker exec -it telco-postgres psql -U admin -c "CREATE DATABASE subscription_db;"
-docker exec -it telco-postgres psql -U admin -c "CREATE DATABASE usage_db;"
-docker exec -it telco-postgres psql -U admin -c "CREATE DATABASE billing_db;"
-docker exec -it telco-postgres psql -U admin -c "CREATE DATABASE payment_db;"
-docker exec -it telco-postgres psql -U admin -c "CREATE DATABASE notification_db;"
-docker exec -it telco-postgres psql -U admin -c "CREATE DATABASE ticket_db;"
-```
+## 📚 Dokümantasyon
 
-### 4. Tek Servis Çalıştır
-
-```bash
-cd customer-service
-mvn spring-boot:run
-```
+| Doküman | Açıklama |
+|---|---|
+| [docs/PROJE_GEREKSINIMLERI.md](docs/PROJE_GEREKSINIMLERI.md) | MVP analiz ve tasarım (33 FR) |
+| [docs/DEMO.md](docs/DEMO.md) | TelcoX web arayüzü demo rehberi |
+| [docs/event-contracts.md](docs/event-contracts.md) | Kafka event sözleşmeleri |
+| [k8s/product-catalog/README.md](k8s/product-catalog/README.md) | Kubernetes örnek deployment |
+| Servis README'leri | Her servis klasöründe (`billing-service/README.md` vb.) |
 
 ---
 
@@ -295,50 +300,22 @@ Diyagramlar [dbdiagram.io](https://dbdiagram.io) üzerinde **database per servic
 
 ## ✅ Proje Durumu
 
-| # | Görev | Durum |
-|---|---|---|
-| 1 | Multi-module Maven yapısı | ✅ Tamamlandı |
-| 2 | 9 servisin Spring Boot iskeletleri | ✅ Tamamlandı |
-| 3 | Database per service prensibi | ✅ Tamamlandı |
-| 4 | 9 servisin ER diyagramları (PNG) | ✅ Tamamlandı |
-| 5 | Tüm servislerin Entity ve Enum sınıfları | ✅ Tamamlandı |
-| 6 | Tüm servislerin application.yaml konfigürasyonları | ✅ Tamamlandı |
-| 7 | Her servise GET /hello endpoint'i | 🔄 Devam Ediyor |
-| 8 | Repository katmanı | 🔄 Devam Ediyor |
-| 9 | Service katmanı | 🔄 Devam Ediyor |
-| 10 | Controller katmanı (REST API) | 🔄 Devam Ediyor |
-| 11 | DTO sınıfları | 🔄 Devam Ediyor |
-| 12 | Global exception handling | 🔄 Devam Ediyor |
-| 13 | Eureka Discovery Server | 🔜 Planlanan (iskelet main'de var, entegrasyon bekliyor) |
-| 14 | API Gateway | 🔜 Planlanan (iskelet main'de var, entegrasyon bekliyor) |
-| 15 | Kafka event'leri | 🔄 Devam Ediyor |
-| 16 | Docker Compose | ✅ Tamamlandı |
+MVP kapsamındaki **33 fonksiyonel gereksinim** tamamlanmıştır.
 
-> **Servis bazlı detay (7-12 ve 15 için):**
-> - ✅ **product-catalog-service, notification-service, ticket-service** (Nasrulla) — Repository/Service/Controller/DTO/Exception handling tamamlandı, GET /hello eklendi, notification-service Kafka consumer'ları (payment.completed/failed, quota.threshold.reached/exceeded) hazır ve test edildi.
-> - Diğer servislerin (customer, order, subscription, usage, billing, payment) güncel durumu için ilgili branch sahipleriyle kontrol edin.
+| Alan | Durum |
+|---|---|
+| 9 iş mikroservisi + gateway, Eureka, config-server | ✅ |
+| Database-per-service + Flyway | ✅ |
+| Transactional Outbox + FAILED retry | ✅ |
+| Saga orchestration (order-service) | ✅ |
+| Kafka event-driven entegrasyon | ✅ |
+| JWT güvenlik (gateway + 7 servis) | ✅ |
+| Uçtan uca onboarding, fatura, kota senaryoları | ✅ |
+| TelcoX web arayüzü (Keycloak + demo verisi) | ✅ |
+| GitHub Actions CI | ✅ |
+| Docker Compose altyapısı | ✅ |
 
----
-
-## 📌 Yapılacaklar
-
-### 🔄 Hafta 2 — Bireysel Ödev
-- [ ] Her servise `GET /hello` endpoint'i (HelloController)
-
-### 📅 Hafta 3
-- [ ] Repository katmanı (JpaRepository interface'leri)
-- [ ] Service katmanı (iş mantığı)
-- [ ] Controller katmanı (REST API endpoint'leri)
-- [ ] DTO sınıfları (Request / Response)
-- [ ] Global exception handling (`@ControllerAdvice`)
-
-### 📅 İlerleyen Haftalar
-- [ ] Eureka Discovery Server
-- [ ] Spring Cloud Config Server
-- [ ] API Gateway (Spring Cloud Gateway)
-- [ ] Apache Kafka — servisler arası event'ler
-- [ ] Docker Compose
-- [ ] Unit & integration testleri
+> **Not:** `order-service` ve `subscription-service` servis seviyesinde JWT henüz eklenmedi; gateway üzerinden erişimde JWT doğrulaması gateway'de yapılır.
 
 ---
 
@@ -346,9 +323,9 @@ Diyagramlar [dbdiagram.io](https://dbdiagram.io) üzerinde **database per servic
 
 | İsim | Sorumlu Servisler |
 |---|---|
-| Nasrulla | product-catalog-service · notification-service · ticket-service |
-| Aymina | customer-service · order-service · subscription-service |
-| Mervenur | billing-service · payment-service · usage-service |
+| Nasrulla Emin | product-catalog-service · notification-service · ticket-service |
+| Aymina Çakır | customer-service · order-service · subscription-service |
+| Mervenur Küçükkara | billing-service · payment-service · usage-service |
 
 ---
 
