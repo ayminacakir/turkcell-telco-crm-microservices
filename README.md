@@ -13,12 +13,45 @@
 ![Maven](https://img.shields.io/badge/Maven-Multi--module-red?style=flat-square&logo=apachemaven)
 ![Docker](https://img.shields.io/badge/Docker-ready-2496ED?style=flat-square&logo=docker)
 
+**Aymina Çakır · Mervenur Küçükkara · Nasrulla Emin**
+
 </div>
+
+---
+
+## 🧭 Değerlendirme Rehberi — *Neyin Nerede Olduğu*
+
+> 👋 **Sayın hocam / jüri üyesi:** Bu bölüm projeyi **tek bakışta** değerlendirebilmeniz içindir. Detaylı proje raporu (grafikler, sistem mimarisi, uçtan uca senaryo diyagramları) ve tüm çalışmaların konumu aşağıdadır.
+
+### 📄 Proje Teslim Raporu — *önce buraya bakın*
+
+| Format | Bağlantı | İçerik |
+|:---:|:---|:---|
+| 📕 **PDF** | **[docs/PROJE_RAPORU.pdf](docs/PROJE_RAPORU.pdf)** | 15 sayfa · mimari + 3 senaryo diyagramı + grafikler + tablolar |
+| 📘 **Word** | **[docs/PROJE_RAPORU.docx](docs/PROJE_RAPORU.docx)** | Düzenlenebilir sürüm (aynı içerik) |
+
+### 🗂️ Proje Haritası — *ne, nerede*
+
+| Ne | Açıklama | Konum |
+|---|---|---|
+| 📄 **Proje raporu** | Detaylı teslim raporu (PDF + Word) | [docs/PROJE_RAPORU.pdf](docs/PROJE_RAPORU.pdf) · [docs/PROJE_RAPORU.docx](docs/PROJE_RAPORU.docx) |
+| 🎤 Sunum dokümanı | Jüri sunumu (17 bölüm, Markdown + Word) | [docs/SUNUM.md](docs/SUNUM.md) · [docs/SUNUM.docx](docs/SUNUM.docx) |
+| 🧪 Kabul testleri | 3 senaryo — komut + beklenen sonuç | [docs/KABUL_TESTLERI.md](docs/KABUL_TESTLERI.md) |
+| 📋 Gereksinimler | 33 fonksiyonel gereksinim (FR) | [docs/PROJE_GEREKSINIMLERI.md](docs/PROJE_GEREKSINIMLERI.md) |
+| 📨 Event sözleşmeleri | Kafka event şemaları | [docs/event-contracts.md](docs/event-contracts.md) |
+| 🖥️ Web arayüzü | Müşteri portalı + operasyon konsolu | [gateway_server/…/static](gateway_server/src/main/resources/static) |
+| 🤖 CI / CD | GitHub Actions — her push'ta build + test | [.github/workflows/ci.yml](.github/workflows/ci.yml) |
+| ☸️ Kubernetes + HPA | Ölçekleme örneği | [k8s/](k8s) |
+| ▶️ Çalıştırma scriptleri | run-all · stop-all · status · seed | [scripts/](scripts) |
+| 🧩 Mikroservisler | 9 iş servisi (sahiplerine göre) | [aşağıdaki tablo](#-mikroservisler) |
+
+> **Port haritası:** gateway `8080` · eureka `8761` · config `8888` · keycloak `8085` · customer `9002` · product-catalog `9003` · order `9004` · subscription `9005` · usage `9006` · billing `9007` · payment `9008` · notification `9009` · ticket `9010`
 
 ---
 
 ## 📋 İçindekiler
 
+- [Değerlendirme Rehberi (neyin nerede)](#-değerlendirme-rehberi--neyin-nerede-olduğu)
 - [Proje Hakkında](#-proje-hakkında)
 - [MVP Senaryoları](#-mvp-senaryoları)
 - [Mimari](#-mimari)
@@ -51,22 +84,41 @@ TelcoX CRM, bir GSM operatörünün tüm iş süreçlerini yöneten **mikroservi
 
 ---
 
-## 🎯 MVP Senaryoları
+## 🎯 MVP Senaryoları — *Uçtan Uca İş Akışları*
 
-```
-1. Yeni Abone Onboarding
-   Müşteri Kaydı → KYC → Sipariş → Ödeme → Aktivasyon → SMS Bildirimi
+Üç kabul senaryosunun da sekans diyagramları aşağıdadır; hepsi **gerçek servisler üzerinde çalıştırılıp doğrulandı** (bkz. [Kabul Senaryoları](#-kabul-senaryoları--uçtan-uca-doğrulandı)).
 
-2. Aylık Fatura
-   Bill-Run Tetiklenir → Kullanım Toplanır → Fatura Oluşur → Bildirim → Ödeme
+<details open>
+<summary><b>1️⃣ Yeni Abone Onboarding (Saga)</b> — müşteri → sipariş → ödeme → abonelik → bildirim</summary>
 
-3. Kota Aşımı
-   CDR Gelir → Kota Güncellenir → %80'de Uyarı SMS → %100'de Ek Paket SMS
-```
+<div align="center"><img src="docs/assets/seq1.png" alt="Onboarding sekans diyagramı" width="820"></div>
+</details>
+
+<details>
+<summary><b>2️⃣ Aylık Fatura Kesimi</b> — bill-run → fatura + PDF → bildirim → ödeme → PAID</summary>
+
+<div align="center"><img src="docs/assets/seq2.png" alt="Aylık fatura sekans diyagramı" width="780"></div>
+</details>
+
+<details>
+<summary><b>3️⃣ Kota Aşımı ve Aşım Ücreti</b> — CDR → %80/%100 eşik SMS → overage faturaya</summary>
+
+<div align="center"><img src="docs/assets/seq3.png" alt="Kota aşımı sekans diyagramı" width="780"></div>
+</details>
 
 ---
 
 ## 🏗️ Mimari
+
+<div align="center">
+
+<img src="docs/assets/arch.png" alt="TelcoX CRM Sistem Mimarisi" width="900">
+
+*İstemci → API Gateway (JWT) → 9 iş servisi → Kafka / PostgreSQL×9 / Redis. Servisler sahiplerine göre renklendirilmiştir.*
+
+</div>
+
+### Klasör yapısı
 
 ```
 turkcell-telco-crm-microservices/
@@ -266,6 +318,7 @@ cd docker && docker compose up -d && cd ..
 
 | Doküman | Açıklama |
 |---|---|
+| [docs/PROJE_RAPORU.pdf](docs/PROJE_RAPORU.pdf) · [PROJE_RAPORU.docx](docs/PROJE_RAPORU.docx) | 📄 **Proje teslim raporu** (PDF + Word) — grafikler, sistem mimarisi, 3 senaryo diyagramı, tablolar |
 | [docs/SUNUM.md](docs/SUNUM.md) · [SUNUM.docx](docs/SUNUM.docx) | 🎤 **Jüri sunum dokümanı** (Markdown + Word) — mimari, desenler, akışlar, demo, katkılar |
 | [docs/PROJE_GEREKSINIMLERI.md](docs/PROJE_GEREKSINIMLERI.md) | MVP analiz ve tasarım (33 FR) |
 | [docs/DEMO.md](docs/DEMO.md) | TelcoX web arayüzü demo rehberi |
@@ -358,9 +411,21 @@ Dokümanın Bölüm 14'teki 3 kabul senaryosu gerçek servisler üzerinde uçtan
 | **14.2 Aylık Fatura** | bill-run → fatura + PDF → `InvoiceGenerated` → ödeme | ✅ PDF **200/application-pdf** + e-posta SENT + fatura **PAID** |
 | **14.3 Kota Aşımı** | CDR usage → %80 uyarı → %100 aşım → overage | ✅ **%80 + %100 SMS** + overage billing'e (`UsageAggregated`) |
 
+<div align="center">
+
+<img src="docs/assets/coverage.png" alt="Teslim kapsamı ve doğrulama" width="760">
+
+</div>
+
 ---
 
 ## ⭐ Beklentinin Ötesi (Spec'in Üstüne Kattıklarımız)
+
+<div align="center">
+
+<img src="docs/assets/beyond.png" alt="Beklenti vs Teslim" width="760">
+
+</div>
 
 MVP'nin 33 fonksiyonel gereksinimi tamamlandı; ek olarak jüriye "production-grade" olgunluk göstermek için:
 
@@ -400,6 +465,13 @@ MVP'nin 33 fonksiyonel gereksinimi tamamlandı; ek olarak jüriye "production-gr
 ## 👥 Ekip ve Katkılar
 
 Proje 3 kişilik ekip tarafından geliştirildi; her geliştirici 3 mikroservisten sorumlu, altyapı (gateway, Eureka, config-server, Docker, CI, web arayüzü) ortak çalışmayla tamamlandı.
+
+<div align="center">
+
+<img src="docs/assets/team.png" alt="Ekip katkı dağılımı" width="820">
+
+</div>
+
 
 | Geliştirici | Sorumlu Servisler | Öne çıkan katkılar |
 |---|---|---|
