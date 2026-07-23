@@ -399,6 +399,34 @@ Arayüz gateway'in içinden servis edilir (tek origin → CORS yok) ve **gerçek
 
 > Canlı RBAC: `ops` = ADMIN (tarife oluştur, bill-run, KYC onayı çalışır) · `elif.aydin` = USER (admin uçları 403 alır).
 
+### 📸 Ekran Görüntüleri
+
+<details open>
+<summary><b>Müşteri Portalı</b> (Elif Aydın)</summary>
+
+| | |
+|:---:|:---:|
+| <img src="docs/assets/ui/00-giris.png" width="410"><br>**Giriş** — müşteri/yönetici, Keycloak | <img src="docs/assets/ui/01-portal-anasayfa.png" width="410"><br>**Ana Sayfa** — canlı kota çubukları |
+| <img src="docs/assets/ui/02-portal-paket-degistir.png" width="410"><br>**Paket Değiştir** — gerçek katalog | <img src="docs/assets/ui/03-portal-kullanim.png" width="410"><br>**Kullanımım** — CDR + uygulama dağılımı |
+| <img src="docs/assets/ui/04-portal-faturalar.png" width="410"><br>**Faturalarım** — grafik + PDF + ÖİV/KDV | <img src="docs/assets/ui/05-portal-talepler.png" width="410"><br>**Taleplerim** — kategori/öncelik |
+
+</details>
+
+<details>
+<summary><b>Operasyon Konsolu</b> (ops) — 10 ekran</summary>
+
+| | |
+|:---:|:---:|
+| <img src="docs/assets/ui/10-admin-dashboard.png" width="410"><br>**Dashboard** — canlı KPI + servis durumu | <img src="docs/assets/ui/11-admin-musteriler.png" width="410"><br>**Müşteriler** — gerçek liste + KYC/durum |
+| <img src="docs/assets/ui/12-admin-urunler.png" width="410"><br>**Ürünler** — tarife kataloğu + versiyon | <img src="docs/assets/ui/13-admin-siparisler.png" width="410"><br>**Siparişler** — portal satın almaları |
+| <img src="docs/assets/ui/14-admin-faturalama.png" width="410"><br>**Faturalama** — bill-run + tüm faturalar | <img src="docs/assets/ui/15-admin-ticket-center.png" width="410"><br>**Ticket Center** — otomatik ekip atama |
+| <img src="docs/assets/ui/16-admin-monitoring.png" width="410"><br>**Monitoring** — gerçek servis sağlığı + pod/CPU | <img src="docs/assets/ui/17-admin-logs.png" width="410"><br>**Logs** — canlı log akışı |
+| <img src="docs/assets/ui/18-admin-alarm.png" width="410"><br>**Alarm Merkezi** — gerçek DOWN/degraded | <img src="docs/assets/ui/19-admin-incident.png" width="410"><br>**Incident** — servis DOWN → otomatik açılır |
+
+</details>
+
+> Tüm ekranların tam çözünürlüklü hâli **[`docs/assets/ui/`](docs/assets/ui)** altındadır (18 ekran).
+
 ---
 
 ## 🧪 Kabul Senaryoları — Uçtan Uca **Doğrulandı**
